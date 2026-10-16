@@ -2,17 +2,18 @@ class_name Board
 extends Node3D
 ## The 100 km board and the wood frame around it, built from WorldSpec.
 ##
-## The surface is a single quad: everything on it, the grid included, is drawn by its shader from
-## the world position, so the board costs the same at any size. The frame is four boxes sharing one
-## material whose shader works out the mitred corners itself.
+## The surface is a single quad: everything on it, the ocean and the grid included, is drawn by its
+## shader from the world position, so the board costs the same at any size. The frame is four boxes
+## sharing one material whose shader works out the mitred corners itself.
 ##
-## The shaders are set in the scene rather than preloaded here. This script is read on the
-## loading screen's loader thread, and in Godot 4.7.1 a preload inside a script read there leaves
-## one loader object per preloaded file behind, reported as leaked instances at exit. Resources the
-## scene file references load as ordinary dependencies of the scene and do not.
+## The shaders and the sheen texture are set in the scene rather than preloaded here. This script
+## is read on the loading screen's loader thread, and in Godot 4.7.1 a preload inside a script read
+## there leaves one loader object per preloaded file behind, reported as leaked instances at exit.
+## Resources the scene file references load as ordinary dependencies of the scene and do not.
 
 @export var board_shader: Shader
 @export var frame_shader: Shader
+@export var sheen_map: Texture2D
 
 var grid_visible := true:
 	set(value):
@@ -20,10 +21,21 @@ var grid_visible := true:
 		if surface_material != null: surface_material.set_shader_parameter("grid_enabled", value)
 
 var surface_material: ShaderMaterial
+## The fades last written to the surface, so a settled view stops writing them every frame.
+var _pushed := Vector3(-1.0, -1.0, -1.0)
 
 func _ready() -> void:
 	_build_surface()
 	_build_frame()
+
+## Hands the view's level-of-detail fades to the surface shader.
+func apply_view(lod: ViewLod) -> void:
+	var fades := Vector3(lod.sheen_fade, lod.strategic_blend, lod.grid_fade)
+	if fades.is_equal_approx(_pushed): return
+	_pushed = fades
+	surface_material.set_shader_parameter("sheen_fade", fades.x)
+	surface_material.set_shader_parameter("strategic_blend", fades.y)
+	surface_material.set_shader_parameter("grid_fade", fades.z)
 
 func _build_surface() -> void:
 	surface_material = ShaderMaterial.new()
@@ -31,6 +43,7 @@ func _build_surface() -> void:
 	surface_material.set_shader_parameter("grid_enabled", grid_visible)
 	surface_material.set_shader_parameter("tile_size", WorldSpec.TILE)
 	surface_material.set_shader_parameter("subtile_size", WorldSpec.SUBTILE)
+	surface_material.set_shader_parameter("sheen_map", sheen_map)
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(WorldSpec.BOARD_SIZE, WorldSpec.BOARD_SIZE)
 	plane.material = surface_material
