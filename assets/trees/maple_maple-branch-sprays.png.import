@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cc002wkqt4jfb"
-path.bptc="res://.godot/imported/maple_maple-v2-dense-card-atlas.png-f563a135e0765e0d538947ee9155a477.bptc.ctex"
+path.bptc="res://.godot/imported/maple_maple-branch-sprays.png-bd113eb57393e9310048cc58684c323f.bptc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/trees/maple_maple-v2-dense-card-atlas.png"
-dest_files=["res://.godot/imported/maple_maple-v2-dense-card-atlas.png-f563a135e0765e0d538947ee9155a477.bptc.ctex"]
+source_file="res://assets/trees/maple_maple-branch-sprays.png"
+dest_files=["res://.godot/imported/maple_maple-branch-sprays.png-bd113eb57393e9310048cc58684c323f.bptc.ctex"]
 
 [params]
 

@@ -3,8 +3,8 @@
     python tools/art/refine_trees.py
 
 The source revision is deliberately pinned: running this twice must not keep shrinking
-the cards. Index buffers and triangle counts are preserved. The stone pine receives
-a new branch-spray atlas and matching UVs; other embedded textures/UVs stay unchanged.
+the cards. Index buffers and triangle counts are preserved. Maple and stone pine use
+branch-spray atlases with matching UVs; other embedded textures/UVs stay unchanged.
 The runtime adds a two-triangle ground patch, included in the 200-triangle ceiling.
 """
 import argparse
@@ -155,6 +155,11 @@ def foliage(name, positions, normals, scale, lift):
             # Airy sprays need a connected core; keep the outer fringe much lighter.
             interior = clamp(1.0 - math.hypot(c[0], c[2]) / 3.2)
             size *= 1.06 + .24 * interior
+        elif name == "maple":
+            # Keep the deciduous crown full, with extra overlap inside its rounded envelope.
+            envelope_distance = math.sqrt((math.hypot(c[0], c[2]) / radius) ** 2
+                                          + ((c[1] - centre_y) * 2 / (high - low)) ** 2)
+            size *= 1.08 + .16 * clamp(1.0 - envelope_distance)
         lobing = 1.0 + .085 * math.sin(3 * theta + .6) + .045 * math.cos(5 * theta)
         target = (c[0] * lobing, c[1] + lift + .17 * variation, c[2] * lobing)
         if name == "stone-pine":
@@ -180,8 +185,8 @@ def foliage(name, positions, normals, scale, lift):
             local = unit(add(sub(p2, target), (0, .18, 0)))
             envelope = unit((p2[0] / radius, (p2[1] - centre_y) / max(high - low, 1) * 1.6,
                              p2[2] / radius))
-            # The stone pine should read as one broad umbrella, not individually inflated pads.
-            local_weight = .25 if name == "stone-pine" else .65
+            # Branch sprays share the crown's lighting, with some local bough volume retained.
+            local_weight = .25 if name == "stone-pine" else .40 if name == "maple" else .65
             n = unit(add(add(mul(local, local_weight), mul(envelope, 1 - local_weight)), (0, .22, 0)))
             # Keep a soft underside without the uniformly upward-facing original normals.
             n = unit((n[0], max(n[1], -.18), n[2]))
@@ -193,7 +198,7 @@ def foliage(name, positions, normals, scale, lift):
     return result, result_n, colors
 
 
-def stone_pine_uvs(count):
+def branch_spray_uvs(count):
     """Give the three plates in each bough complementary sprays from the 2x2 atlas."""
     assert count % 4 == 0
     result = []
@@ -218,9 +223,9 @@ def rebuild(name, source):
     raw = subprocess.run(["git", "show", f"{source}:{relative}"], cwd=ROOT,
                          check=True, capture_output=True).stdout
     glb = GLB(raw)
-    if name == "stone-pine":
-        atlas = ROOT / "assets/trees/textures/stone-pine-boughs.png"
-        glb.replace_image(1, atlas.read_bytes(), "stone-pine-branch-sprays")
+    if name in ("stone-pine", "maple"):
+        atlas = ROOT / f"assets/trees/textures/{name}-boughs.png"
+        glb.replace_image(1, atlas.read_bytes(), f"{name}-branch-sprays")
     tint, bark, scale, lift = SPECIES[name]
     triangles = 0
     for mesh in glb.doc["meshes"]:
@@ -233,8 +238,8 @@ def rebuild(name, source):
             material = glb.doc["materials"][primitive["material"]]
             if material.get("alphaMode") == "MASK":
                 positions, normals, colors = foliage(name, positions, normals, scale, lift)
-                if name == "stone-pine":
-                    glb.write_values(attrs["TEXCOORD_0"], stone_pine_uvs(len(positions)))
+                if name in ("stone-pine", "maple"):
+                    glb.write_values(attrs["TEXCOORD_0"], branch_spray_uvs(len(positions)))
                 attrs["COLOR_0"] = glb.add_colors(colors)
                 material.setdefault("extras", {})["outpostFoliageNormalMode"] = "volume"
                 material["extras"]["outpostVisualPass"] = 1

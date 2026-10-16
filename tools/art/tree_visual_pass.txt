@@ -6,8 +6,9 @@ their GLBs from the pinned original revision (2f193f8), then changes card placem
 volume normals, vertex occlusion and bark/leaf tints. Trunk positions and normals
 remain exactly as authored; all foliage cards stay in the crown.
 It preserves index buffers and triangle counts. Embedded images and UVs also stay
-unchanged except for the stone pine's foliage, which uses the branch-spray atlas
-assets/trees/textures/stone-pine-boughs.png and four matching UV regions.
+unchanged except for maple and stone pine foliage. Their branch-spray atlases are
+assets/trees/textures/maple-boughs.png and stone-pine-boughs.png; each uses four
+matching UV regions.
 Run from the repository root with Python 3 (standard library only):
 
     python tools/art/refine_trees.py
@@ -25,9 +26,17 @@ quads use complementary atlas regions; the wood is unchanged. Stone-pine normals
 weight the shared crown envelope 75 percent, reducing the inflated look of each
 separate pad. Sprays face outward, and their larger central overlap connects the
 core while leaving a broken fringe. Godot's extracted runtime atlas uses
-high-quality VRAM compression and mipmaps. Other species retain their previous
-normal recipe and artwork.
+high-quality VRAM compression and mipmaps.
 See stone_pine_boughs_prompt.txt for the exact texture-generation prompt.
+
+Maple: 66 existing foliage quads carry complementary branches with pointed,
+five-lobed leaves and visible twigs. Its original rounded canopy depth is retained;
+slightly larger sprays, especially inside its three-dimensional crown envelope,
+keep the broadleaf crown full while allowing gaps between branches. Normals use
+40 percent local bough shape and 60 percent crown envelope. The original wood,
+ground patch, index buffers and triangle counts are preserved. Runtime atlas import
+settings match the stone pine. See maple_boughs_prompt.txt for the exact prompt.
+The other six species retain their previous normal recipe and artwork.
 
 Budget, including the runtime two-triangle ground patch:
     Oak          197 + 2 = 199
@@ -80,6 +89,7 @@ Visual review (requires the actual renderer; --headless cannot capture pixels):
     godot --path . --script res://tools/tree_visual_review.gd -- --rotation=90 --output=previews/tree-visual-pass/after-90.png
     godot --path . --script res://tools/tree_visual_review.gd -- --closeup=birch --output=previews/tree-visual-pass/birch-ground-closeup.png
     godot --path . --script res://tools/tree_visual_review.gd -- --closeup=maple --output=previews/tree-visual-pass/maple-ground-closeup.png
+    godot --path . --script res://tools/tree_visual_review.gd -- --closeup=maple --rotation=60 --output=previews/tree-visual-pass/maple-after-60.png
     godot --path . --script res://tools/tree_visual_review.gd -- --closeup=stone-pine --output=previews/tree-visual-pass/stone-pine-after.png
     godot --path . --script res://tools/tree_visual_review.gd -- --dense=10000 --frames=240 --output=previews/tree-visual-pass/dense-with-bases.png
     godot --path . --script res://tools/tree_visual_review.gd -- --dense=10000 --frames=240 --no-bases --output=previews/tree-visual-pass/dense-no-bases.png
