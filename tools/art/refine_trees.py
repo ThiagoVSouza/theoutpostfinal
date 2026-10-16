@@ -54,49 +54,6 @@ def clamp(x, low=0.0, high=1.0):
     return max(low, min(high, x))
 
 
-def undergrowth(name, positions, normals, colors):
-    """Move two obscured canopy cards to low vegetation beside the root flare.
-
-    This spends existing geometry on grounding instead of adding triangles or a
-    fourth material. Only one card is taken from a bough, keeping its other views.
-    """
-    vertices = 6 if name == "pine" else 4
-    cards = len(positions) // vertices
-    centres = [mean(positions[i * vertices:(i + 1) * vertices]) for i in range(cards)]
-    # Prefer cards near the trunk, where other boughs cover them. Avoid the leader.
-    candidates = sorted(range(cards), key=lambda i:
-                        centres[i][0] ** 2 + centres[i][2] ** 2 + .13 * centres[i][1] ** 2)
-    chosen = []
-    for i in candidates:
-        if name == "pine" or all(i // 3 != j // 3 for j in chosen):
-            chosen.append(i)
-        if len(chosen) == 2:
-            break
-    corners = [(0, 0), (1, 0), (1, 1), (0, 1)]
-    order = [0, 1, 2, 0, 2, 3] if vertices == 6 else [0, 1, 2, 3]
-    for patch, card in enumerate(chosen):
-        cx, cz, yaw = ((.52, .38, -.6), (-.46, .17, 1.25))[patch]
-        width = 1.4 if patch == 0 else 1.15
-        height = .32 if patch == 0 else .25
-        depth = .85 if patch == 0 else .72
-        if name in ("birch", "cypress"):
-            width *= .8
-            height *= .9
-            cx *= .8
-            cz *= .8
-        right = (math.cos(yaw), 0, math.sin(yaw))
-        outward = (-math.sin(yaw), 0, math.cos(yaw))
-        for vertex, corner in enumerate(order):
-            u, v = corners[corner]
-            p = add((cx, .015 + height * v, cz),
-                    add(mul(right, (u - .5) * width), mul(outward, (v - .25) * depth)))
-            index = card * vertices + vertex
-            positions[index] = p
-            normals[index] = unit((p[0] - cx, .45, p[2] - cz))
-            shade = .64 + .22 * v
-            colors[index] = (shade * .88, shade, shade * .80, 1.0)
-
-
 class GLB:
     def __init__(self, data):
         magic, version, size = struct.unpack_from("<III", data)
@@ -209,25 +166,7 @@ def foliage(name, positions, normals, scale, lift):
             outer = clamp(math.hypot(p2[0], p2[2]) / radius)
             shade = clamp((.78 + .15 * height + .07 * outer) * (1 + .045 * variation), .70, 1)
             colors.append((shade, shade, shade * (.98 + .02 * height), 1.0))
-    undergrowth(name, result, result_n, colors)
     return result, result_n, colors
-
-
-def wood(name, positions, normals):
-    """Extend the existing lowest ring into uneven buttresses without adding faces."""
-    result, result_n = [], []
-    for p, normal in zip(positions, normals):
-        x, y, z = p
-        influence = clamp((.8 - y) / .8) ** 2
-        angle = math.atan2(z, x)
-        flare = 1 + influence * (.38 + .16 * math.sin(angle * 3 + .7))
-        # The bottom ring stays just below the ground; the sloped face remains visible.
-        if y < 0:
-            y = -.035 + (y + .12) * .1
-        p2 = (x * flare, y, z * flare)
-        result.append(p2)
-        result_n.append(unit((normal[0], normal[1] + influence * .22, normal[2])))
-    return result, result_n
 
 
 def rebuild(name, source):
@@ -252,12 +191,7 @@ def rebuild(name, source):
                 material["extras"]["outpostVisualPass"] = 1
                 material["pbrMetallicRoughness"]["baseColorFactor"] = [*tint, 1.0]
             else:
-                positions, normals = wood(name, positions, normals)
-                # Dark, warm bark at ground contact joins the flare to the litter patch.
-                # glTF vertex colour also works in the ordinary imported wood material.
-                contact = [clamp((.85 - p[1]) / .85) for p in positions]
-                attrs["COLOR_0"] = glb.add_colors([
-                    (1 - .24 * w, 1 - .29 * w, 1 - .36 * w, 1.0) for w in contact])
+                # Keep the authored trunk geometry; the ground texture supplies the transition.
                 material["pbrMetallicRoughness"]["baseColorFactor"] = [*bark, 1.0]
             glb.write_values(attrs["POSITION"], positions)
             glb.write_values(attrs["NORMAL"], normals)

@@ -1,4 +1,4 @@
-// Two triangles per tree: an irregular transition from meadow to moss, soil and fallen leaves.
+// Two triangles per tree: painted bare earth, pebbles and fallen leaves, feathered into meadow.
 // One shared material, varied by the existing instance transform. No extra nodes or frame work.
 // The ground/hold functions intentionally mirror board.gdshader: an include is avoided because
 // this project's loader-thread shader-include issue is documented in that shader's header.
@@ -7,6 +7,7 @@ render_mode diffuse_burley, cull_back;
 
 uniform sampler2D grass_map : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2D grass_macro_map : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D ground_patch : source_color, filter_linear_mipmap_anisotropic, repeat_disable;
 uniform vec2 grass_tile_size = vec2(30.0, 27.5);
 uniform vec2 grass_macro_tile_size = vec2(657.0, 602.25);
 uniform vec3 grass_detail_gain = vec3(1.111900, 1.146304, 1.123724);
@@ -68,31 +69,19 @@ void vertex() {
 }
 
 void fragment() {
-	vec2 q = (UV - 0.5) * 2.0;
-	q.x += q.y * (instance_offset.x - 0.5) * 0.35;
-	q.y *= 0.88 + instance_offset.y * 0.24;
-	// Overlapping unequal lobes make a broken footprint; the source texture erodes its boundary.
-	float shape = 1.0 - smoothstep(0.02, 0.90, length(q * vec2(1.12, 1.0)));
-	shape = max(shape, (1.0 - smoothstep(0.02, 0.53, length(q - vec2(0.35, -0.25)))) * 0.72);
-	shape = max(shape, (1.0 - smoothstep(0.02, 0.44, length(q - vec2(-0.43, 0.19)))) * 0.61);
-	vec3 detail = texture(grass_map, UV * vec2(0.14, 0.31) + instance_offset).rgb;
-	float pigment = dot(detail, vec3(0.38, 0.53, 0.09));
-	float breakup = clamp((pigment - 0.14) * 7.0, 0.0, 1.0);
-	float patch = clamp(shape * (0.72 + breakup * 0.72) - (1.0 - breakup) * 0.07, 0.0, 1.0);
+	// The instance already rotates with its tree. Mirror and compress the artwork slightly
+	// to break up repetition while keeping the worn centre beneath the trunk.
+	vec2 q = UV - 0.5;
+	q *= mix(vec2(-1.0), vec2(1.0), step(vec2(0.5), instance_offset));
+	q *= vec2(1.0 + instance_offset.y * 0.12, 1.0 + instance_offset.x * 0.09);
+	vec4 patch = texture(ground_patch, q + 0.5);
 	vec3 ground = grass(world_xz);
-	// Mostly a subtle darkening, with a little warm litter and cool moss. The border converges
-	// to the exact ground colour, so the alpha-cut edge does not leave a visible circular decal.
-	vec3 soil = ground * vec3(0.70, 0.64, 0.58);
-	float moss = smoothstep(0.18, 0.25, pigment) * 0.45;
-	soil = mix(soil, ground * vec3(0.65, 0.78, 0.58), moss);
-	float litter = smoothstep(0.26, 0.32, pigment) * 0.32;
-	soil = mix(soil, ground * vec3(1.08, 0.91, 0.67), litter);
-	// Narrow, irregular traces from the texture suggest ground cover without upright geometry.
-	float edge_cover = smoothstep(0.22, 0.29, pigment) * (1.0 - smoothstep(0.16, 0.62, patch));
-	vec3 colour = mix(ground, soil, patch * 0.78);
-	colour *= 1.0 - edge_cover * patch * 0.12;
+	vec3 soil = patch.rgb * (0.76 + instance_offset.x * 0.10);
+	// Blend to the exact grass colour before lighting; alpha only discards the empty border.
+	// This keeps a soft edge in the opaque pass without transparent sorting or a hard ring.
+	vec3 colour = mix(ground, soil, patch.a);
 	ALBEDO = hold(colour);
-	ALPHA = patch;
+	ALPHA = patch.a;
 	ALPHA_SCISSOR_THRESHOLD = 0.015;
 	ROUGHNESS = 1.0;
 	SPECULAR = 0.0;

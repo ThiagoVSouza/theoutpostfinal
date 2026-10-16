@@ -246,6 +246,7 @@ func _add_species(scene: PackedScene) -> void:
 func _make_base_material() -> ShaderMaterial:
 	var material := ShaderMaterial.new()
 	material.shader = load("res://shaders/tree_base.gdshader") as Shader
+	material.set_shader_parameter("ground_patch", load("res://assets/textures/tree_ground_patch.png"))
 	var board := get_parent().get_node_or_null("Board") as Board
 	if board != null and board.surface_material != null:
 		for parameter in ["grass_map", "grass_macro_map", "grass_tile_size", "grass_macro_tile_size", "grass_mean", "grass_variation",

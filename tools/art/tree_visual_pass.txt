@@ -3,7 +3,8 @@ TREE VISUAL PASS
 
 The eight original trees remain the source assets. tools/art/refine_trees.py reads
 their GLBs from the pinned original revision (2f193f8), then changes card placement,
-volume normals, vertex occlusion, bark/leaf tints and existing trunk base vertices.
+volume normals, vertex occlusion and bark/leaf tints. Trunk positions and normals
+remain exactly as authored; all foliage cards stay in the crown.
 It preserves embedded images, UV coordinates, index buffers and triangle counts.
 Run from the repository root with Python 3 (standard library only):
 
@@ -24,11 +25,16 @@ Budget, including the runtime two-triangle ground patch:
 
 Forest appends the base as a shared third material surface in each species mesh,
 using the existing chunk MultiMesh transforms. It adds one surface draw per visible
-species/chunk, not one node or draw per tree. The patch gives irregular soil/litter
-and moss coloration; the existing trunk mesh supplies the visible root flare.
-Two existing interior canopy cards are moved to small, low foliage clumps beside
-each trunk. This gives the base some height without extra triangles/materials.
-These are sparse undergrowth using the species foliage, not additional rocks.
+species/chunk, not one node or draw per tree. The ImageGen-created
+tree_ground_patch.png paints exposed earth, dust, leaf litter and small pebbles
+around the unchanged trunk (see tree_ground_patch_prompt.txt for the exact prompt).
+All ground detail is flat artwork. Its alpha blends the paint into the exact Board
+grass colour before lighting, while alpha scissor discards the transparent border.
+It stays in the opaque rendering path and receives the scene's tree shadows.
+The patch rotates with each tree, with stable UV flips, slight scale differences
+and subtle brightness variation. Texture and shader are loaded once in _ready().
+The base shader keeps three texture reads: two for matching grass and one for paint.
+The paint uses high-quality VRAM compression, mipmaps and alpha-border repair.
 
 Foliage COLOR_0 supplies direction-independent bough shading; all eight assets now
 carry outpostFoliageNormalMode="volume". The shader preserves the volume normals on
@@ -56,6 +62,8 @@ their sRGB-decoded readback. Recalibrate after changing scene lighting.
 Visual review (requires the actual renderer; --headless cannot capture pixels):
     godot --path . --script res://tools/tree_visual_review.gd -- --output=previews/tree-visual-pass/after.png
     godot --path . --script res://tools/tree_visual_review.gd -- --rotation=90 --output=previews/tree-visual-pass/after-90.png
+    godot --path . --script res://tools/tree_visual_review.gd -- --closeup=birch --output=previews/tree-visual-pass/birch-ground-closeup.png
+    godot --path . --script res://tools/tree_visual_review.gd -- --closeup=maple --output=previews/tree-visual-pass/maple-ground-closeup.png
     godot --path . --script res://tools/tree_visual_review.gd -- --dense=10000 --frames=240 --output=previews/tree-visual-pass/dense-with-bases.png
     godot --path . --script res://tools/tree_visual_review.gd -- --dense=10000 --frames=240 --no-bases --output=previews/tree-visual-pass/dense-no-bases.png
     godot --path . --script res://tools/tree_visual_review.gd -- --calibrate --output=previews/tree-visual-pass/calibration.png

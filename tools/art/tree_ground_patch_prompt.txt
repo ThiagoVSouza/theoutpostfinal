@@ -1,0 +1,16 @@
+Built-in image_gen generation, 2026-10-16.
+Output: assets/textures/tree_ground_patch.png
+Supporting style reference: user attachment codex-clipboard-786c25f9-8510-40b2-87d8-26cd5c56d701.png
+Transparent background requested; original generated RGBA preserved without programmatic image editing.
+
+Exact prompt:
+Use case: stylized-concept.
+Asset type: transparent top-down ground decal texture for a real-time strategy game's tree base, painted on a single flat ground quad.
+Input image: the supplied tiny reference is ONLY a material/style guide for the pale exposed earth and sparse small debris near the tree. Do not copy the tree, tree shadow, grass, camera perspective or image composition.
+Primary request: create one subtle natural patch of dusty exposed earth with very sparse scattered leaf litter, a few tiny flat weathered pebbles and a few slender fallen twigs. The patch is a flat albedo ground painting, not a raised mound and not a physical object. It should resemble lightly worn soil around the foot of a tree with no tree drawn. At gameplay view the main read is softly mottled pale dry earth fading organically into the meadow, with only a few small quiet specks of debris.
+Composition: square canvas, perfectly orthographic looking straight down. A loosely asymmetric oblong patch occupying roughly the central 75 percent, with a few ragged lobes, wispy gaps and naturally uneven feathered edges that dissolve into true transparency. Do not make a circle, ring, disk, neat oval, vignette, rectangular frame or hard silhouette. No special bright or dark center and no central hole. Leave transparent clearance around all canvas edges. No tiling required.
+Palette/materials: subdued pale gray-ochre earth, muted warm dusty beige and gray-brown, a little dull olive dust; low contrast, neutral material color, no saturated orange or yellow. Small leaf litter muted brown. A few tiny pebbles gray-beige and flat, no large rocks or stones. The entire patch represents about 2–3 meters of ground; debris occupies less than 4 percent of the patch and must remain much smaller than the patch.
+Lighting: neutral evenly diffuse albedo, no directional sun, no cast shadows, no ambient occlusion halo, no shadows from tree, no baked highlight or shading gradient.
+Transparency: actual alpha channel with organically feathered semi-transparent edges and small sparse transparent interruptions; all outside background fully transparent. Do not draw a checkerboard.
+Avoid: tree, trunk, root, roots, stump, trunk flare, plant, standing grass, grass clump, 3D grass, flower, bush, moss mound, raised soil pile, stone border, large rock, path, perspective, horizon, scenery, tree shadow, directional shadow, black smudge, circular outline, repeated ornaments, text, watermark, frame.
+Output: one clean production-ready square transparent ground decal PNG only.
