@@ -1,18 +1,36 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=9 format=3]
 
-[ext_resource type="Script" path="res://scripts/ui/stats_overlay.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="Script" path="res://scripts/world/board.gd" id="2_board"]
+[ext_resource type="Script" path="res://scripts/world/strategy_camera.gd" id="3_camera"]
+[ext_resource type="Script" path="res://scripts/ui/stats_overlay.gd" id="4_stats"]
+[ext_resource type="Shader" path="res://shaders/board.gdshader" id="5_board_shader"]
+[ext_resource type="Shader" path="res://shaders/wood_frame.gdshader" id="6_frame_shader"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
-background_color = Color(0.054902, 0.109804, 0.12549, 1)
+background_color = Color(0, 0, 0, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.72, 0.70, 0.66, 1)
+ambient_light_energy = 0.45
 
 [node name="Main" type="Node3D"]
+script = ExtResource("1_main")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_main")
 
-[node name="Camera3D" type="Camera3D" parent="."]
-current = true
+[node name="Sun" type="DirectionalLight3D" parent="."]
+rotation = Vector3(-0.872665, -0.610865, 0)
+light_energy = 1.1
+
+[node name="Board" type="Node3D" parent="."]
+script = ExtResource("2_board")
+board_shader = ExtResource("5_board_shader")
+frame_shader = ExtResource("6_frame_shader")
+
+[node name="Camera" type="Camera3D" parent="."]
+script = ExtResource("3_camera")
 
 [node name="StatsOverlay" type="CanvasLayer" parent="."]
-script = ExtResource("1")
+script = ExtResource("4_stats")
