@@ -16,8 +16,11 @@ const ATLAS_REGIONS: Array[Rect2] = [
 ]
 const HIT_SIZE := 40.0
 const ROW_PITCH := 44.0
-const HOVER_SCALE := 1.08
+# Match the flag's visible edge movement on these smaller, centre-pivoted icons.
+const HOVER_SCALE := 1.12
 const PRESSED_SCALE := 0.94
+const FEEDBACK_DURATION := 0.07
+const PRESS_DURATION := 0.05
 const HOVER_BRIGHTNESS := 1.12
 const PRESSED_BRIGHTNESS := 0.82
 const SELECTED_BRIGHTNESS := 1.08
@@ -157,12 +160,12 @@ func _update_feedback(index: int, animate := true) -> void:
 	_selection_rims[index].visible = selected
 	var target_scale := 1.0
 	var brightness := SELECTED_BRIGHTNESS if selected else 1.0
-	var duration := 0.12
+	var duration := FEEDBACK_DURATION
 	var draw_mode := buttons[index].get_draw_mode()
 	if draw_mode in [BaseButton.DRAW_PRESSED, BaseButton.DRAW_HOVER_PRESSED]:
 		target_scale = PRESSED_SCALE
 		brightness = PRESSED_BRIGHTNESS
-		duration = 0.07
+		duration = PRESS_DURATION
 	elif draw_mode == BaseButton.DRAW_HOVER:
 		target_scale = HOVER_SCALE
 		brightness = SELECTED_HOVER_BRIGHTNESS if selected else HOVER_BRIGHTNESS
