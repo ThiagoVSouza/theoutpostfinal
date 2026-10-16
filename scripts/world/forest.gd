@@ -146,7 +146,7 @@ func _spots(trees: int, rng: RandomNumberGenerator) -> PackedVector2Array:
 			spots.append(candidates[i])
 	return spots
 
-## The canopy map for the Overview level and out: RGB the crowns' colour, alpha their coverage.
+## The canopy map for the Distant level and out: RGB the crowns' colour, alpha their coverage.
 func _paint(spots: PackedVector2Array, kinds: PackedInt32Array, scales: PackedFloat32Array) -> void:
 	var widest := 0.0
 	for radius in _crown_radius:
@@ -202,8 +202,8 @@ static func _cover(cover: PackedFloat32Array, colour: PackedFloat32Array, index:
 	colour[index * 3 + 1] += crown.g * amount
 	colour[index * 3 + 2] += crown.b * amount
 
-## Folds one imported tree into a single two-surface mesh, puts its foliage on the volume-normal
-## shader, and measures its crown.
+## Folds one imported tree into a single two-surface mesh, puts its foliage on the foliage shader,
+## and measures its crown.
 func _add_species(scene: PackedScene) -> void:
 	var tree := scene.instantiate()
 	var mesh := ArrayMesh.new()
@@ -222,6 +222,11 @@ func _add_species(scene: PackedScene) -> void:
 				foliage.set_shader_parameter("albedo_color", leaves.albedo_color)
 				foliage.set_shader_parameter("alpha_cutoff", leaves.alpha_scissor_threshold)
 				foliage.set_shader_parameter("roughness", leaves.roughness)
+				# The GLB material's extras, which Godot keeps as metadata, say whether the cards'
+				# normals describe the crown's volume (see foliage.gdshader).
+				var extras: Variant = leaves.get_meta("extras", {})
+				foliage.set_shader_parameter("volume_normals",
+					extras is Dictionary and extras.get("outpostFoliageNormalMode", "") == "volume")
 				material = foliage
 				var size := part.mesh.get_aabb().size
 				radius = maxf(size.x, size.z) * 0.5
