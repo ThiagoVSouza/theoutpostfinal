@@ -22,7 +22,7 @@ var grid_visible := true:
 
 var surface_material: ShaderMaterial
 ## The fades last written to the surface, so a settled view stops writing them every frame.
-var _pushed := Vector3(-1.0, -1.0, -1.0)
+var _pushed := Vector2(-1.0, -1.0)
 
 func _ready() -> void:
 	_build_surface()
@@ -30,12 +30,11 @@ func _ready() -> void:
 
 ## Hands the view's level-of-detail fades to the surface shader.
 func apply_view(lod: ViewLod) -> void:
-	var fades := Vector3(lod.sheen_fade, lod.strategic_blend, lod.grid_fade)
+	var fades := Vector2(lod.sheen_fade, lod.grid_fade)
 	if fades.is_equal_approx(_pushed): return
 	_pushed = fades
 	surface_material.set_shader_parameter("sheen_fade", fades.x)
-	surface_material.set_shader_parameter("strategic_blend", fades.y)
-	surface_material.set_shader_parameter("grid_fade", fades.z)
+	surface_material.set_shader_parameter("grid_fade", fades.y)
 
 func _build_surface() -> void:
 	surface_material = ShaderMaterial.new()

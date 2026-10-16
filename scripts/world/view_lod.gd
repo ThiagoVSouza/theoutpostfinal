@@ -21,13 +21,11 @@ const EXIT_PIXELS := [48.0, 4.5, 1.5]
 const ENTER_PIXELS := [60.0, 5.0, 1.6]
 
 ## The sea's glitter, from Map2: below about ten pixels a copy its fixed 138 m tile stops reading
-## as glitter and reads as interference between two grids instead.
+## as glitter and reads as interference between two grids instead. It fades to its own average,
+## so the sea keeps its colour. Map2's strategic-map blend is not taken: on an all-ocean board it
+## only turned the sea a brighter blue at the top level.
 const SHEEN_FADE_MIN_PIXELS := 70.0
 const SHEEN_FADE_MAX_PIXELS := 115.0
-## Where the surface turns into the strategic map: under about six pixels no surface texture is
-## legible, and by sixteen there is enough to be worth drawing.
-const STRATEGIC_FULL_PIXELS := 8.0
-const STRATEGIC_NONE_PIXELS := 16.0
 ## The grid belongs to the Detail and Distant tiers only. It is fully gone by the time the view
 ## crosses into Overview.
 const GRID_NONE_PIXELS := 4.5
@@ -40,7 +38,6 @@ const REFERENCE_FOV := 60.0
 var tier := Tier.DETAIL
 var tile_pixels := 0.0
 var sheen_fade := 1.0
-var strategic_blend := 0.0
 var grid_fade := 1.0
 var _started := false
 
@@ -54,8 +51,6 @@ func update(camera: Camera3D, delta: float) -> void:
 	var step := 1.0 if not _started else delta / FADE_SECONDS
 	_started = true
 	sheen_fade = move_toward(sheen_fade, smoothstep(SHEEN_FADE_MIN_PIXELS, SHEEN_FADE_MAX_PIXELS, tile_pixels), step)
-	strategic_blend = move_toward(strategic_blend,
-		1.0 - smoothstep(STRATEGIC_FULL_PIXELS, STRATEGIC_NONE_PIXELS, tile_pixels), step)
 	grid_fade = move_toward(grid_fade, smoothstep(GRID_NONE_PIXELS, GRID_FULL_PIXELS, tile_pixels), step)
 
 static func desired_tier(current: int, pixels: float) -> int:

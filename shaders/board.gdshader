@@ -1,8 +1,14 @@
 // The board's surface: open ocean everywhere for now, with the tile and subtile grid over it.
 //
 // The sea is TheOutpostMap2's grid_water.gdshader with everything about coasts taken out, since
-// there is no land yet: its deep-water colour, its baked sheen, and its strategic-map ocean at
-// far zoom. Map2 measures in units of 5.7735 m; every size here has been converted to metres.
+// there is no land yet: its deep-water colour and its baked sheen. Map2 measures in units of
+// 5.7735 m; every size here has been converted to metres.
+//
+// The sea keeps one colour at every level of detail. Map2 faded its sheen to nothing and then
+// blended to a brighter strategic-map ocean, so its sea changed colour twice on the way out: darker
+// once the glitter had gone, then much lighter at the top. Here the glitter fades to its own
+// average instead, which is what the eye sees of it from far away anyway, and that colour carries
+// on to the top level.
 //
 // Unlit. The sea is flat and the camera orthographic, so the Sun gave it one constant brightness
 // across the whole board, and measured from captures that brightness was within 2% of the albedo
@@ -26,13 +32,15 @@ uniform vec4 sheen_tint : source_color = vec4(0.76, 0.87, 0.85, 1.0);
 uniform float sheen_strength = 0.22;
 // Metres covered by one edge of the sheen tile: Map2's 24 units.
 uniform float sheen_world_size = 138.564;
+// The average of glitter * (0.55 + 0.8 * band) over the sheen tile, measured from the imported
+// texture: mean R 0.161 and mean G 0.486, independent because the two are sampled at unrelated
+// positions. Re-measure it if the tile is ever rebaked.
+uniform float sheen_mean = 0.151;
 uniform vec4 deep_color : source_color = vec4(0.035, 0.20, 0.32, 1.0);
-uniform vec4 strategic_ocean : source_color = vec4(0.114, 0.290, 0.408, 1.0);
 
-// Driven by ViewLod: how much glitter to draw, how far the surface has turned into the strategic
-// map, and how much of the grid belongs to the current level of detail.
+// Driven by ViewLod: how much of the glitter's detail to draw, and how much of the grid belongs to
+// the current level of detail.
 uniform float sheen_fade = 1.0;
-uniform float strategic_blend = 0.0;
 uniform float grid_fade = 1.0;
 
 uniform vec3 grid_color : source_color = vec3(0.62, 0.60, 0.54);
@@ -78,19 +86,20 @@ void vertex() {
 
 void fragment() {
 	vec2 p = world_position.xz;
-	vec3 water = deep_color.rgb;
 	// Two copies of the sheen tile at mismatched scales and drift rates: the glitter in R rides
 	// through the broad bands in G, and the periods never line up, so the tile does not read as a
 	// grid. The second copy is turned as well as rescaled, or both copies' swell bands run parallel
-	// and reinforce into diagonal corduroy across the whole sea. Skipped once it has faded out.
+	// and reinforce into diagonal corduroy across the whole sea. Once its detail has faded out, the
+	// texture reads are skipped and only its average is left.
+	float sheen = sheen_mean;
 	if (sheen_fade > 0.0) {
 		float glitter = texture(sheen_map, (p - GLITTER_DRIFT * TIME) / sheen_world_size).r;
 		vec2 band_uv = (mat2(vec2(0.53, 0.85), vec2(-0.85, 0.53)) * (p + BAND_DRIFT * TIME))
 			/ (sheen_world_size * 1.63);
 		float band = texture(sheen_map, band_uv).g;
-		water += sheen_tint.rgb * glitter * (0.55 + 0.8 * band) * sheen_strength * sheen_fade;
+		sheen = mix(sheen_mean, glitter * (0.55 + 0.8 * band), sheen_fade);
 	}
-	vec3 color = mix(water, strategic_ocean.rgb, strategic_blend);
+	vec3 color = deep_color.rgb + sheen_tint.rgb * sheen * sheen_strength;
 	if (grid_enabled && grid_fade > 0.0) {
 		// Metres per pixel along the worse screen axis; under a tilted camera the two differ.
 		float footprint = max(length(dFdx(p)), length(dFdy(p)));
