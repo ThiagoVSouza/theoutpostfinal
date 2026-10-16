@@ -5,13 +5,29 @@ The eight original trees remain the source assets. tools/art/refine_trees.py rea
 their GLBs from the pinned original revision (2f193f8), then changes card placement,
 volume normals, vertex occlusion and bark/leaf tints. Trunk positions and normals
 remain exactly as authored; all foliage cards stay in the crown.
-It preserves embedded images, UV coordinates, index buffers and triangle counts.
+It preserves index buffers and triangle counts. Embedded images and UVs also stay
+unchanged except for the stone pine's foliage, which uses the branch-spray atlas
+assets/trees/textures/stone-pine-boughs.png and four matching UV regions.
 Run from the repository root with Python 3 (standard library only):
 
     python tools/art/refine_trees.py
 
 This is deterministic and can be rerun after editing the species parameters.
 The generated GLBs are committed assets; Python is not needed to run the game.
+To regenerate just one species:
+
+    python tools/art/refine_trees.py --species stone-pine
+
+Stone pine: the earlier whole-clump atlas repeated three dense, rounded pads at
+each bough. The replacement has asymmetric needle-bearing sprays and transparent
+channels, so branch structure survives the closest gameplay view. Its 75 foliage
+quads use complementary atlas regions; the wood is unchanged. Stone-pine normals
+weight the shared crown envelope 75 percent, reducing the inflated look of each
+separate pad. Sprays face outward, and their larger central overlap connects the
+core while leaving a broken fringe. Godot's extracted runtime atlas uses
+high-quality VRAM compression and mipmaps. Other species retain their previous
+normal recipe and artwork.
+See stone_pine_boughs_prompt.txt for the exact texture-generation prompt.
 
 Budget, including the runtime two-triangle ground patch:
     Oak          197 + 2 = 199
@@ -64,6 +80,7 @@ Visual review (requires the actual renderer; --headless cannot capture pixels):
     godot --path . --script res://tools/tree_visual_review.gd -- --rotation=90 --output=previews/tree-visual-pass/after-90.png
     godot --path . --script res://tools/tree_visual_review.gd -- --closeup=birch --output=previews/tree-visual-pass/birch-ground-closeup.png
     godot --path . --script res://tools/tree_visual_review.gd -- --closeup=maple --output=previews/tree-visual-pass/maple-ground-closeup.png
+    godot --path . --script res://tools/tree_visual_review.gd -- --closeup=stone-pine --output=previews/tree-visual-pass/stone-pine-after.png
     godot --path . --script res://tools/tree_visual_review.gd -- --dense=10000 --frames=240 --output=previews/tree-visual-pass/dense-with-bases.png
     godot --path . --script res://tools/tree_visual_review.gd -- --dense=10000 --frames=240 --no-bases --output=previews/tree-visual-pass/dense-no-bases.png
     godot --path . --script res://tools/tree_visual_review.gd -- --calibrate --output=previews/tree-visual-pass/calibration.png

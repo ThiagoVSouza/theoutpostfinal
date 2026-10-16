@@ -2,17 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b456attembwcw"
-path.bptc="res://.godot/imported/stone-pine_stone-pine-v2-card-atlas.png-78d21a776518d9178e68ab9e1e24c27e.bptc.ctex"
+uid="uid://cq5qcm0vn6kk3"
+path.bptc="res://.godot/imported/stone-pine_stone-pine-branch-sprays.png-efb1b0b816e714da86617379ce178aa0.bptc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
 }
+generator_parameters={
+"md5": "af24eefd1b97e2bbbddd449bc2a62922"
+}
 
 [deps]
 
-source_file="res://assets/trees/stone-pine_stone-pine-v2-card-atlas.png"
-dest_files=["res://.godot/imported/stone-pine_stone-pine-v2-card-atlas.png-78d21a776518d9178e68ab9e1e24c27e.bptc.ctex"]
+source_file="res://assets/trees/stone-pine_stone-pine-branch-sprays.png"
+dest_files=["res://.godot/imported/stone-pine_stone-pine-branch-sprays.png-efb1b0b816e714da86617379ce178aa0.bptc.ctex"]
 
 [params]
 

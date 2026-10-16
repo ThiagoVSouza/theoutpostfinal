@@ -3,8 +3,8 @@
     python tools/art/refine_trees.py
 
 The source revision is deliberately pinned: running this twice must not keep shrinking
-the cards. Embedded textures, UVs and index buffers are preserved byte-for-byte. Only
-positions, foliage volume normals, vertex occlusion and material tints are changed.
+the cards. Index buffers and triangle counts are preserved. The stone pine receives
+a new branch-spray atlas and matching UVs; other embedded textures/UVs stay unchanged.
 The runtime adds a two-triangle ground patch, included in the 200-triangle ceiling.
 """
 import argparse
@@ -103,6 +103,24 @@ class GLB:
                                       "count": len(colors), "type": "VEC4"})
         return index
 
+    def replace_image(self, index, data, name):
+        """Replace a packed image without retaining the unused original atlas bytes."""
+        image = self.doc["images"][index]
+        view = self.doc["bufferViews"][image["bufferView"]]
+        start = view.get("byteOffset", 0)
+        end = start + (view["byteLength"] + 3) // 4 * 4
+        padded = data + b"\0" * (-len(data) % 4)
+        for other in self.doc["bufferViews"]:
+            if other is view:
+                continue
+            offset = other.get("byteOffset", 0)
+            assert offset >= end or offset + other["byteLength"] <= start
+            if offset >= end:
+                other["byteOffset"] = offset + len(padded) - (end - start)
+        self.binary[start:end] = padded
+        view["byteLength"] = len(data)
+        image["name"] = name
+
     def save(self, path):
         self.doc["buffers"][0]["byteLength"] = len(self.binary)
         document = json.dumps(self.doc, separators=(",", ":")).encode()
@@ -133,10 +151,14 @@ def foliage(name, positions, normals, scale, lift):
         theta = math.atan2(c[2], c[0])
         variation = math.sin(group * 2.39996 + .8)
         size = scale * (1.0 + .09 * variation)
+        if name == "stone-pine":
+            # Airy sprays need a connected core; keep the outer fringe much lighter.
+            interior = clamp(1.0 - math.hypot(c[0], c[2]) / 3.2)
+            size *= 1.06 + .24 * interior
         lobing = 1.0 + .085 * math.sin(3 * theta + .6) + .045 * math.cos(5 * theta)
         target = (c[0] * lobing, c[1] + lift + .17 * variation, c[2] * lobing)
         if name == "stone-pine":
-            target = (target[0] * 1.07, 6.65 + (c[1] - 6.65) * .72, target[2] * 1.07)
+            target = (target[0] * 1.07, 6.65 + (c[1] - 6.65) * .86, target[2] * 1.07)
         elif name == "spruce":
             # Gather the boughs into staggered tiers; preserve an irregular skirt.
             tier = round((c[1] - .6) / 1.22) * 1.22 + .6
@@ -150,7 +172,7 @@ def foliage(name, positions, normals, scale, lift):
             target = c
         for local_index, p in enumerate(points):
             rel = sub(p, c)
-            sy = size * (.80 if name == "spruce" else .84 if name == "stone-pine" else 1.0)
+            sy = size * (.80 if name == "spruce" else .94 if name == "stone-pine" else 1.0)
             p2 = add(target, (rel[0] * size, rel[1] * sy, rel[2] * size))
             if name == "white-willow":
                 p2 = (p2[0], p2[1] - .14 * math.hypot(rel[0], rel[2]), p2[2])
@@ -158,7 +180,9 @@ def foliage(name, positions, normals, scale, lift):
             local = unit(add(sub(p2, target), (0, .18, 0)))
             envelope = unit((p2[0] / radius, (p2[1] - centre_y) / max(high - low, 1) * 1.6,
                              p2[2] / radius))
-            n = unit(add(add(mul(local, .65), mul(envelope, .35)), (0, .22, 0)))
+            # The stone pine should read as one broad umbrella, not individually inflated pads.
+            local_weight = .25 if name == "stone-pine" else .65
+            n = unit(add(add(mul(local, local_weight), mul(envelope, 1 - local_weight)), (0, .22, 0)))
             # Keep a soft underside without the uniformly upward-facing original normals.
             n = unit((n[0], max(n[1], -.18), n[2]))
             result_n.append(n)
@@ -169,11 +193,34 @@ def foliage(name, positions, normals, scale, lift):
     return result, result_n, colors
 
 
+def stone_pine_uvs(count):
+    """Give the three plates in each bough complementary sprays from the 2x2 atlas."""
+    assert count % 4 == 0
+    result = []
+    for card in range(count // 4):
+        group, plate = divmod(card, 3)
+        cell = (group * 3 + plate) % 4
+        x, y = cell % 2, cell // 2
+        corners = [(0, 1), (1, 1), (1, 0), (0, 0)]
+        # Flip whole sprays to break repetition while preserving the transparent cell margin.
+        for u, v in corners:
+            if group % 2:
+                u = 1 - u
+            # This primary plate's local V points inward; its painted stem belongs there.
+            if plate == 0:
+                v = 1 - v
+            result.append(((x + u) * .5, (y + v) * .5))
+    return result
+
+
 def rebuild(name, source):
     relative = f"assets/trees/{name}.glb"
     raw = subprocess.run(["git", "show", f"{source}:{relative}"], cwd=ROOT,
                          check=True, capture_output=True).stdout
     glb = GLB(raw)
+    if name == "stone-pine":
+        atlas = ROOT / "assets/trees/textures/stone-pine-boughs.png"
+        glb.replace_image(1, atlas.read_bytes(), "stone-pine-branch-sprays")
     tint, bark, scale, lift = SPECIES[name]
     triangles = 0
     for mesh in glb.doc["meshes"]:
@@ -186,6 +233,8 @@ def rebuild(name, source):
             material = glb.doc["materials"][primitive["material"]]
             if material.get("alphaMode") == "MASK":
                 positions, normals, colors = foliage(name, positions, normals, scale, lift)
+                if name == "stone-pine":
+                    glb.write_values(attrs["TEXCOORD_0"], stone_pine_uvs(len(positions)))
                 attrs["COLOR_0"] = glb.add_colors(colors)
                 material.setdefault("extras", {})["outpostFoliageNormalMode"] = "volume"
                 material["extras"]["outpostVisualPass"] = 1
@@ -206,6 +255,7 @@ def rebuild(name, source):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-ref", default=SOURCE)
+    parser.add_argument("--species", nargs="+", choices=list(SPECIES), default=list(SPECIES))
     args = parser.parse_args()
-    report = [rebuild(name, args.source_ref) for name in SPECIES]
+    report = [rebuild(name, args.source_ref) for name in args.species]
     print(json.dumps(report, indent=2))
