@@ -25,6 +25,12 @@ extends Node3D
 ## directional_shadow_max_distance, and the camera's depth range changes with its zoom, so the
 ## distance follows camera.far every frame. A shadow texel is then roughly the larger of the view's
 ## width and its depth, over the shadow map's 4096 texels.
+##
+## The sun's shadow_blur is 0.5 in main.tscn. Godot's soft shadow filter samples the shadow map in
+## a pattern rotated per pixel, which temporal anti-aliasing would normally smooth away; without it,
+## at the default blur of 1.0, the rotation shows as a fine dithered mesh across every penumbra.
+## Halving the blur tightens the samples until the pattern is gone, at no measurable cost. The
+## filter's medium quality also removes it, for about 0.18 ms more per frame.
 
 @onready var board: Board = $Board
 @onready var camera: StrategyCamera = $Camera

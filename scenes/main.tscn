@@ -52,6 +52,7 @@ light_energy = 1.0186
 shadow_enabled = true
 directional_shadow_mode = 0
 directional_shadow_fade_start = 1.0
+shadow_blur = 0.5
 
 [node name="Rim" type="DirectionalLight3D" parent="."]
 rotation = Vector3(-0.4882, -2.3562, 0)
