@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=21 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/world/board.gd" id="2_board"]
@@ -8,6 +8,16 @@
 [ext_resource type="Shader" path="res://shaders/wood_frame.gdshader" id="6_frame_shader"]
 [ext_resource type="Texture2D" path="res://assets/textures/water_sheen.png" id="7_sheen"]
 [ext_resource type="Texture2D" path="res://assets/textures/grass_meadow.png" id="8_grass"]
+[ext_resource type="Script" path="res://scripts/world/forest.gd" id="9_forest"]
+[ext_resource type="Shader" path="res://shaders/foliage.gdshader" id="10_foliage"]
+[ext_resource type="PackedScene" path="res://assets/trees/oak.glb" id="11_oak"]
+[ext_resource type="PackedScene" path="res://assets/trees/maple.glb" id="12_maple"]
+[ext_resource type="PackedScene" path="res://assets/trees/birch.glb" id="13_birch"]
+[ext_resource type="PackedScene" path="res://assets/trees/pine.glb" id="14_pine"]
+[ext_resource type="PackedScene" path="res://assets/trees/stone-pine.glb" id="15_stone_pine"]
+[ext_resource type="PackedScene" path="res://assets/trees/spruce.glb" id="16_spruce"]
+[ext_resource type="PackedScene" path="res://assets/trees/cypress.glb" id="17_cypress"]
+[ext_resource type="PackedScene" path="res://assets/trees/white-willow.glb" id="18_white_willow"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -32,6 +42,11 @@ board_shader = ExtResource("5_board_shader")
 frame_shader = ExtResource("6_frame_shader")
 sheen_map = ExtResource("7_sheen")
 grass_map = ExtResource("8_grass")
+
+[node name="Forest" type="Node3D" parent="."]
+script = ExtResource("9_forest")
+species = Array[PackedScene]([ExtResource("11_oak"), ExtResource("12_maple"), ExtResource("13_birch"), ExtResource("14_pine"), ExtResource("15_stone_pine"), ExtResource("16_spruce"), ExtResource("17_cypress"), ExtResource("18_white_willow")])
+foliage_shader = ExtResource("10_foliage")
 
 [node name="Camera" type="Camera3D" parent="."]
 script = ExtResource("3_camera")

@@ -1,11 +1,13 @@
 extends Node3D
-## The game scene: the board under a strategy camera. G toggles the grid.
+## The game scene: the board under a strategy camera. G toggles the grid, and T steps the
+## benchmark forest through none, 1,000, 10,000 and 50,000 trees.
 ##
 ## Runs after its children each frame (process_priority), so the level of detail is decided from
 ## the zoom the camera has just settled on rather than the previous frame's.
 
 @onready var board: Board = $Board
 @onready var camera: StrategyCamera = $Camera
+@onready var forest: Forest = $Forest
 @onready var stats: StatsOverlay = $StatsOverlay
 
 var lod := ViewLod.new()
@@ -13,22 +15,44 @@ var lod := ViewLod.new()
 func _ready() -> void:
 	process_priority = 1
 	stats.extra_rows = _view_rows
-	lod.update(camera, 0.0)
-	board.apply_view(lod)
+	_update_view(0.0)
 
 func _process(delta: float) -> void:
+	_update_view(delta)
+
+func _update_view(delta: float) -> void:
 	lod.update(camera, delta)
 	board.apply_view(lod)
+	# Tree meshes up to the Distant level; from Overview out the forest is painted into the grass.
+	var meshes := lod.tier <= ViewLod.Tier.DISTANT
+	forest.visible = meshes
+	board.set_forest_painted(not meshes)
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_G:
-		board.grid_visible = not board.grid_visible
+	if not (event is InputEventKey and event.pressed and not event.echo): return
+	match event.physical_keycode:
+		KEY_G:
+			board.grid_visible = not board.grid_visible
+		KEY_T:
+			forest.cycle()
+			board.set_forest_map(forest.paint_texture, forest.paint_origin, forest.paint_size)
 
-## The level of detail and the view's height, for the stats panel.
+## The level of detail, the view's height and what the forest is drawing, for the stats panel.
 func _view_rows() -> Array:
+	var rid := get_viewport().get_viewport_rid()
+	var draws := RenderingServer.viewport_get_render_info(rid,
+		RenderingServer.VIEWPORT_RENDER_INFO_TYPE_VISIBLE, RenderingServer.VIEWPORT_RENDER_INFO_DRAW_CALLS_IN_FRAME)
+	var primitives := RenderingServer.viewport_get_render_info(rid,
+		RenderingServer.VIEWPORT_RENDER_INFO_TYPE_VISIBLE, RenderingServer.VIEWPORT_RENDER_INFO_PRIMITIVES_IN_FRAME)
+	var trees := "off"
+	if forest.count > 0:
+		trees = _grouped(forest.placed) + ("" if forest.visible else " painted")
 	return [
 		["LOD", "%d %s" % [lod.tier, ViewLod.NAMES[lod.tier]]],
 		["Height", "%s m" % _grouped(roundi(ViewLod.height_metres(camera.zoom)))],
+		["Trees", trees],
+		["Draws", _grouped(draws)],
+		["Triangles", _grouped(primitives)],
 	]
 
 static func _grouped(value: int) -> String:

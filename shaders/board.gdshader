@@ -56,6 +56,14 @@ uniform vec3 grass_mean : source_color = vec3(0.5058, 0.4979, 0.2848);
 // repeat. At 0 the repeat shows as a lattice from a kilometre up.
 uniform float grass_variation = 0.6;
 
+// The forest painted into the grass from the Overview level out, where the tree meshes are hidden:
+// a canopy map built by Forest from the trees' own positions, RGB their crowns' colour and alpha
+// how much of the ground they cover. forest_paint is 1 while it shows and 0 otherwise.
+uniform sampler2D forest_map : source_color, filter_linear_mipmap, repeat_disable;
+uniform vec2 forest_origin = vec2(0.0);
+uniform float forest_size = 1.0;
+uniform float forest_paint = 0.0;
+
 // The test land mass: a circle of land_radius metres around land_centre, its edge pushed in and
 // out by sine waves of 2 to 11 bumps around it, each as a fraction of the radius.
 uniform vec2 land_centre = vec2(0.0);
@@ -143,7 +151,15 @@ vec3 grass(vec2 p) {
 	// never line up with the near copy's repeat.
 	vec2 far_uv = (mat2(vec2(0.80, 0.60), vec2(-0.60, 0.80)) * p) / (grass_tile_size * 7.3);
 	vec3 far = texture(grass_map, far_uv).rgb;
-	return near * mix(vec3(1.0), far / grass_mean, grass_variation);
+	vec3 ground = near * mix(vec3(1.0), far / grass_mean, grass_variation);
+	if (forest_paint > 0.0) {
+		vec2 uv = (p - forest_origin) / forest_size;
+		if (all(greaterThanEqual(uv, vec2(0.0))) && all(lessThanEqual(uv, vec2(1.0)))) {
+			vec4 canopy = texture(forest_map, uv);
+			ground = mix(ground, canopy.rgb, canopy.a * forest_paint);
+		}
+	}
+	return ground;
 }
 
 void vertex() {
