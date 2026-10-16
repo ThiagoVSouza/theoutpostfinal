@@ -9,8 +9,8 @@ const RESOURCES: Array[StringName] = [&"gold", &"population", &"score"]
 const ICON_REGIONS: Array[Rect2] = [
 	Rect2(56, 112, 616, 512), Rect2(740, 112, 692, 512), Rect2(1484, 112, 656, 512),
 ]
-const STRIP_SIZE := Vector2(252, 44)
-const MINIMUM_WIDTH := 196.0
+const STRIP_SIZE := Vector2(384, 44)
+const MINIMUM_WIDTH := 264.0
 const TOTAL_FONT_SIZE := 14
 const MINIMUM_TOTAL_FONT_SIZE := 12
 const INCREMENT_FONT_SIZE := 10
@@ -227,10 +227,6 @@ func _layout() -> void:
 		if is_instance_valid(control) and control.is_visible_in_tree():
 			reserved.append(control.get_global_rect().grow(HUD_GAP))
 	var preferred_size := STRIP_SIZE
-	var header := get_node_or_null("../SettlementHeader") as Control
-	if header != null:
-		# Keep this secondary readout narrower than the settlement identity at every size.
-		preferred_size.x = minf(preferred_size.x, header.size.x * 0.9)
 	var target := Rect2(Vector2((viewport_size.x - preferred_size.x) * 0.5, 3), preferred_size)
 	var needs_fallback := target.position.x < HUD_GAP
 	for rect in reserved:
@@ -243,14 +239,14 @@ func _layout() -> void:
 	panel.size = size
 	var cell_width := size.x / RESOURCES.size()
 	var factor := clampf(size.x / STRIP_SIZE.x, 0.8, 1.0)
-	var icon_size := roundf(22.0 * factor)
-	var padding := roundf(7.0 * factor)
+	var icon_size := roundf(32.0 * factor)
+	var padding := roundf(12.0 * factor)
 	for index in cells.size():
 		cells[index].position = Vector2(cell_width * index, 0)
 		cells[index].size = Vector2(cell_width, size.y)
 		icons[index].position = Vector2(padding, (size.y - icon_size) * 0.5)
 		icons[index].size = Vector2.ONE * icon_size
-		var text_x := padding + icon_size + roundf(5.0 * factor)
+		var text_x := padding + icon_size + roundf(8.0 * factor)
 		var text_width := maxf(1.0, cell_width - text_x - padding)
 		total_labels[index].position = Vector2(text_x, 2)
 		# Leave room for Spectral's native line height at the smaller type sizes.

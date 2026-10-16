@@ -4,7 +4,7 @@
 
 [node name="SettlementResources" type="Control"]
 layout_mode = 3
-offset_right = 252.0
+offset_right = 384.0
 offset_bottom = 44.0
 mouse_filter = 2
 script = ExtResource("1_resources")
