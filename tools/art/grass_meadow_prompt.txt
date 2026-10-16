@@ -1,0 +1,19 @@
+Built-in image_gen edit, 2026-10-16. Output: assets/textures/grass_meadow_detail.png
+
+First pass prompt (intermediate, followed by palette/detail refinement):
+
+Use case: style-transfer.
+Asset type: seamless square opaque grass meadow albedo texture for a top-down real-time strategy game.
+Input images: Image 1 is the edit target, the existing grass_meadow.png texture; Image 2 is a supporting style reference ONLY for the ground grass surface, NOT its trees, terrain composition, rocks, lighting, or camera.
+Primary request: Improve the existing soft olive ground texture with restrained, readable tiny grass tuft groups, delicate dry blades, and sparse dull bare-earth flecks, preserving its overall subdued yellow-olive palette and mostly quiet grassy coverage. Keep its broad gentle tonal variation but resolve some fine texture into natural small grass shapes. The entire square represents roughly 90 metres of meadow; all individual grass tufts must be very small and irregularly distributed, with medium patches only subtle, no oversized plants or recognizable repeating landmarks.
+Color palette: match Image 1 closely, average sRGB approximately RGB(129,127,73), low saturation olive yellow-green, muted straw and dull umber accents. Do not globally brighten, darken, or shift toward lush saturated emerald green. Ground should remain predominantly meadow grass; exposed earth occupies only small scattered portions.
+Composition/framing: perfectly orthographic straight down, flat continuous surface all the way to every edge. Seamless texture tile, opposite left/right and top/bottom edges match with no visible border, 1536x1536 square if possible.
+Lighting: neutral even diffuse albedo, no directional illumination or directional cast shadows, no vignette, no shading gradient.
+Constraints: Change only the surface texture detail; preserve low overall contrast, palette and scale of Image 1. No trees, trunks, bushes, flowers, rocks, paths, objects, horizon, perspective, scene framing, text, border, watermark, baked tree shadows, dark shadow pools, harsh highlights, huge grass blades, repetitive diagonal streaks, or photoreal macro lawn. Do not depict the reference landscape. Output only the finished seamless opaque square texture.
+Final refinement prompt:
+Use case: style-transfer.
+Asset type: seamless square opaque grass meadow albedo game texture.
+Input images: Image 1 is the existing original grass_meadow.png and is the EXACT COLOR PALETTE guide. Image 2 is the grass_meadow_detail.png edit target, its tiny natural surface detail is the structural guide.
+Primary request: Correct Image 2's palette to match Image 1, and soften only its highest-frequency detail. Image 2 is too yellow/brown; return it to the quieter, desaturated gray-olive green of Image 1. Keep the recognizable tiny tuft groups, fine straw, and sparse tiny earthy interruptions added in Image 2, but reduce their contrast approximately 35 percent. Preserve quiet open grass between scattered tufts. It covers 90 metres square at game scale, so the texture must stay restrained and subtle.
+Target color: average sRGB approximately RGB(129,127,73), muted low saturation olive-green. Match Image 1's blue component and green component; no ochre/yellow cast. Don't create a color gradient. Keep this texture a little more detailed than Image 1 but less noisy than Image 2.
+Invariants: square, perfectly straight-down orthographic flat surface, evenly diffuse unlit albedo, fully opaque, seamless opposite edges. Avoid any border or edge shading. No tree shadows or any directional cast shadows. No trees, trunks, rocks, bushes, flowers, large plants, paths, perspective, horizon, objects, text, watermark, vignette. Seamless square texture tile only.

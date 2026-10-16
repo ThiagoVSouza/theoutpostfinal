@@ -1,0 +1,67 @@
+TREE VISUAL PASS
+===============
+
+The eight original trees remain the source assets. tools/art/refine_trees.py reads
+their GLBs from the pinned original revision (2f193f8), then changes card placement,
+volume normals, vertex occlusion, bark/leaf tints and existing trunk base vertices.
+It preserves embedded images, UV coordinates, index buffers and triangle counts.
+Run from the repository root with Python 3 (standard library only):
+
+    python tools/art/refine_trees.py
+
+This is deterministic and can be rerun after editing the species parameters.
+The generated GLBs are committed assets; Python is not needed to run the game.
+
+Budget, including the runtime two-triangle ground patch:
+    Oak          197 + 2 = 199
+    Maple        197 + 2 = 199
+    Birch        197 + 2 = 199
+    Pine         198 + 2 = 200
+    Stone pine   197 + 2 = 199
+    Spruce       195 + 2 = 197
+    Cypress      195 + 2 = 197
+    White willow 197 + 2 = 199
+
+Forest appends the base as a shared third material surface in each species mesh,
+using the existing chunk MultiMesh transforms. It adds one surface draw per visible
+species/chunk, not one node or draw per tree. The patch gives irregular soil/litter
+and moss coloration; the existing trunk mesh supplies the visible root flare.
+Two existing interior canopy cards are moved to small, low foliage clumps beside
+each trunk. This gives the base some height without extra triangles/materials.
+These are sparse undergrowth using the species foliage, not additional rocks.
+
+Foliage COLOR_0 supplies direction-independent bough shading; all eight assets now
+carry outpostFoliageNormalMode="volume". The shader preserves the volume normals on
+both card faces. Distant canopy color also includes area-weighted vertex color.
+
+Grass uses the ImageGen-created grass_meadow_detail.png (see grass_meadow_prompt.txt
+for both exact prompts and source roles). The original grass_meadow.png remains the
+macro texture. The two texture reads now use independent 30 x 27.5 m and
+657 x 602.25 m periods. Detail RGB is corrected by measured linear-light mean ratios
+so the texture change does not shift the whole board's average palette. Import uses
+VRAM compression, high quality and mipmaps.
+
+Keep the grass()/hold() implementations and matching default uniforms in
+shaders/board.gdshader and shaders/tree_base.gdshader synchronized. The intentional
+duplication avoids the project's documented loader-thread shader-include issue.
+Forest copies explicit Board material overrides; Godot returns null for unoverridden
+shader defaults, so those defaults must match in both shaders.
+
+Lighting: ambient .65, rim .16, sun 1.08; existing directions and ACES exposure retained.
+The ground compensation new_light is measured, not estimated:
+    (1.69575, 1.67591, 1.34783)
+The review tool measures 16 linear-albedo strips with linear tonemapping and fits
+their sRGB-decoded readback. Recalibrate after changing scene lighting.
+
+Visual review (requires the actual renderer; --headless cannot capture pixels):
+    godot --path . --script res://tools/tree_visual_review.gd -- --output=previews/tree-visual-pass/after.png
+    godot --path . --script res://tools/tree_visual_review.gd -- --rotation=90 --output=previews/tree-visual-pass/after-90.png
+    godot --path . --script res://tools/tree_visual_review.gd -- --dense=10000 --frames=240 --output=previews/tree-visual-pass/dense-with-bases.png
+    godot --path . --script res://tools/tree_visual_review.gd -- --dense=10000 --frames=240 --no-bases --output=previews/tree-visual-pass/dense-no-bases.png
+    godot --path . --script res://tools/tree_visual_review.gd -- --calibrate --output=previews/tree-visual-pass/calibration.png
+
+Each capture writes a JSON with renderer, primitive/draw counts and measured CPU/GPU
+times. Dense mode deliberately keeps all meshes visible beyond the normal detail
+LOD, using Forest.set_count and its production chunking. It is a controlled stress
+comparison, not a gameplay frame-rate claim. Baseline and final PNGs are in the
+ignored previews/tree-visual-pass directory of the working checkout.
