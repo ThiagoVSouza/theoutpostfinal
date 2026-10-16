@@ -51,9 +51,9 @@ func _build() -> void:
 	root.add_child(_viewport)
 	_world = load("res://scenes/main.tscn").instantiate()
 	# Keep the production environment, lights, Board and Forest construction. The interactive
-	# camera, LOD switching and stats overlay are replaced by a fixed review camera/labels.
+	# camera, LOD switching and gameplay overlays are replaced by a fixed review camera/labels.
 	_world.set_script(null)
-	for child_name in ["Camera", "StatsOverlay"]:
+	for child_name in ["Camera", "StatsOverlay", "GameUI"]:
 		var old := _world.get_node(child_name)
 		_world.remove_child(old)
 		old.free()
