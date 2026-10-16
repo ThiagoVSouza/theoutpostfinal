@@ -2,29 +2,28 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bnpsy6st1vnld"
-path.bptc="res://.godot/imported/pine_bough_rgba_dense.png-76cdc5c26c504d320e3f002a1bec4f8e.bptc.ctex"
+uid="uid://r7pkvmvtvuss"
+path="res://.godot/imported/pine-bough-v1.png-b6f0b76ebe21a076c4d9ae4151c91dda.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/trees/pine_bough_rgba_dense.png"
-dest_files=["res://.godot/imported/pine_bough_rgba_dense.png-76cdc5c26c504d320e3f002a1bec4f8e.bptc.ctex"]
+source_file="res://assets/trees/textures/pine-bough-v1.png"
+dest_files=["res://.godot/imported/pine-bough-v1.png-b6f0b76ebe21a076c4d9ae4151c91dda.ctex"]
 
 [params]
 
-compress/mode=2
-compress/high_quality=true
+compress/mode=0
+compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

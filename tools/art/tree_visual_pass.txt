@@ -6,7 +6,8 @@ their GLBs from the pinned original revision (2f193f8), then changes card placem
 volume normals, vertex occlusion and bark/leaf tints. Trunk positions and normals
 remain exactly as authored; all foliage cards stay in the crown.
 It preserves index buffers and triangle counts. Embedded images and UVs also stay
-unchanged except for maple, birch, stone pine and white willow foliage. Their
+unchanged except for maple, birch, stone pine and white willow foliage. Pine replaces
+only its foliage image with the original v1 texture, preserving its UVs. The four
 branch-spray atlases are assets/trees/textures/maple-boughs.png, birch-boughs.png,
 stone-pine-boughs.png and white-willow-boughs.png; each uses four matching UV regions.
 Run from the repository root with Python 3 (standard library only):
@@ -56,7 +57,28 @@ indices and the ground patch remain unchanged; runtime texture settings match th
 other branch atlases. A four-percent UV inset inside each atlas cell uses its extra
 transparent padding, retaining safe margins while keeping the leafy body full.
 See birch_boughs_prompt.txt for the three exact generation/refinement prompts.
-The other four species retain their previous normal recipe and artwork.
+Pine: restore the v1 needle texture and keep all 58 complete boughs (26 folded pairs
+and 32 planar quads). Transforming each half-fold independently had separated their
+shared joins. The dedicated pine recipe groups connected strips first, pins all
+252 root-edge vertices, and keeps all fold joins exact. Lower and middle boughs
+grow up to six percent in length and fifteen percent in outer width, fading to no
+growth at the upper leader. Crown height, UVs, bark image and wood are unchanged.
+Normals blend 60 percent upward source-card shading, 25 percent crown envelope and
+15 percent complete-bough volume, preserving readable needle-bearing surfaces.
+This restores connected fullness toward the exact oaklab-pine v1 comparison while
+retaining the current 30-triangle textured trunk and 200-triangle total budget.
+The v1 texture has finer needle fringes than the dense v2 texture; an A/B render
+with identical geometry and shading confirmed softer tips without thinning the
+crown. assets/trees/textures/pine-bough-v1.png is the unmodified embedded image 0
+from oaklab-pine/oaklab-pine.glb in TheOutpostModels/local-models/neutral/nature.
+The original 1536 x 1024 PNG is copied directly, with no pixel edits.
+Source model SHA-256:
+    ae749d6db65012c2fc349a574e43712cc30cdf3c0d5a6c42a2576268af3b6426
+Extracted image SHA-256:
+    0e187133ab236e1e27a2109c88a2391bcad5bcff3ecd389ed6c5655648efddd5
+The extracted runtime image uses high-quality VRAM
+compression, mipmaps and alpha-border repair like the other foliage atlases.
+The other three species retain their previous normal recipe and artwork.
 
 Budget, including the runtime two-triangle ground patch:
     Oak          197 + 2 = 199
@@ -115,6 +137,8 @@ Visual review (requires the actual renderer; --headless cannot capture pixels):
     godot --path . --script res://tools/tree_visual_review.gd -- --closeup=white-willow --rotation=60 --output=previews/tree-visual-pass/white-willow-after-60.png
     godot --path . --script res://tools/tree_visual_review.gd -- --closeup=birch --output=previews/tree-visual-pass/birch-after.png
     godot --path . --script res://tools/tree_visual_review.gd -- --closeup=birch --rotation=60 --output=previews/tree-visual-pass/birch-after-60.png
+    godot --path . --script res://tools/tree_visual_review.gd -- --closeup=pine --output=previews/tree-visual-pass/pine-after.png
+    godot --path . --script res://tools/tree_visual_review.gd -- --closeup=pine --rotation=60 --output=previews/tree-visual-pass/pine-after-60.png
     godot --path . --script res://tools/tree_visual_review.gd -- --dense=10000 --frames=240 --output=previews/tree-visual-pass/dense-with-bases.png
     godot --path . --script res://tools/tree_visual_review.gd -- --dense=10000 --frames=240 --no-bases --output=previews/tree-visual-pass/dense-no-bases.png
     godot --path . --script res://tools/tree_visual_review.gd -- --calibrate --output=previews/tree-visual-pass/calibration.png

@@ -4,7 +4,8 @@
 
 The source revision is deliberately pinned: running this twice must not keep shrinking
 the cards. Index buffers and triangle counts are preserved. Maple, birch, stone pine
-and white willow use branch-spray atlases; other embedded textures/UVs stay unchanged.
+and white willow use branch-spray atlases; pine restores its v1 needle texture.
+Other embedded textures and all remaining UVs stay unchanged.
 The runtime adds a two-triangle ground patch, included in the 200-triangle ceiling.
 """
 import argparse
@@ -21,7 +22,7 @@ SPECIES = {
     "oak": ((.44, .63, .60), (.76, .71, .62), .84, .34),
     "maple": ((.86, .94, .86), (.76, .71, .62), .88, .20),
     "birch": ((.76, .84, .76), (.70, .72, .69), .93, .05),
-    "pine": ((.78, .90, .78), (.72, .77, .69), 1.03, .0),
+    "pine": ((.78, .90, .78), (.72, .77, .69), 1.06, .0),
     "stone-pine": ((.73, .82, .66), (.55, .67, .64), .90, .0),
     "spruce": ((.45, .55, .40), (.78, .81, .75), .86, .12),
     "cypress": ((.54, .64, .49), (.79, .82, .76), .95, .0),
@@ -158,13 +159,75 @@ def birch_rising_cards(points):
     return result
 
 
-def foliage(name, positions, normals, scale, lift):
-    """Keep each three-card bough together, giving it a smaller uneven envelope.
+def pine_bough_groups(positions):
+    """Join the pine's paired folded strips before transforming whole boughs."""
+    assert len(positions) % 6 == 0
+    parent = list(range(len(positions) // 6))
 
-    The pine uses unindexed triangle pairs; its six vertices form one card. All
-    others use four-vertex quads and three differently facing cards per bough.
-    """
-    block = 6 if name == "pine" else 12
+    def find(i):
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+
+    owner = {}
+    for i, p in enumerate(positions):
+        block = i // 6
+        other = owner.setdefault(p, block)
+        parent[find(block)] = find(other)
+    groups = {}
+    for i in range(len(positions)):
+        groups.setdefault(find(i // 6), []).append(i)
+    return list(groups.values())
+
+
+def pine_foliage(positions, normals, uvs, scale):
+    """Fill the lower crown while pinning every branch root and shared fold join."""
+    groups = pine_bough_groups(positions)
+    assert len(groups) == 58 and sum(len(g) == 12 for g in groups) == 26
+    roots = [mean([positions[i] for i in g if uvs[i][0] == 0.0]) for g in groups]
+    low_root, high_root = min(r[1] for r in roots), max(r[1] for r in roots)
+    low, high = min(p[1] for p in positions), max(p[1] for p in positions)
+    radius = max(math.hypot(p[0], p[2]) for p in positions)
+    result, result_n = list(positions), list(normals)
+    colors = [(1.0, 1.0, 1.0, 1.0)] * len(positions)
+    for number, (group, root) in enumerate(zip(groups, roots)):
+        anchors = {}
+        for i in group:
+            assert uvs[i][0] in (0.0, 1.0)
+            if uvs[i][0] == 0.0:
+                v = uvs[i][1]
+                assert v not in anchors or anchors[v] == positions[i]
+                anchors[v] = positions[i]
+        height = (root[1] - low_root) / (high_root - low_root)
+        weight = clamp((.88 - height) / .65)
+        for i in group:
+            if uvs[i][0] == 0.0 or weight == 0.0:
+                continue
+            anchor = anchors[uvs[i][1]]
+            # Grow the outside of the bough; its root edge and the apex stay fixed.
+            result[i] = add(add(root, mul(sub(anchor, root), 1.0 + .15 * weight)),
+                            mul(sub(positions[i], anchor), 1.0 + (scale - 1.0) * weight))
+        centre = mean([result[i] for i in group])
+        variation = math.sin(number * 2.39996 + .8)
+        for i in group:
+            p = result[i]
+            base = normals[i] if normals[i][1] >= 0.0 else mul(normals[i], -1.0)
+            envelope = unit((p[0] / radius, (p[1] - (high + low) * .5) / (high - low) * 1.6,
+                             p[2] / radius))
+            local = unit(add(sub(p, centre), (0.0, .18, 0.0)))
+            n = unit(add(add(mul(base, .60), mul(envelope, .25)), mul(local, .15)))
+            result_n[i] = unit((n[0], max(n[1], .30), n[2]))
+            height = clamp((p[1] - low) / (high - low))
+            outer = clamp(math.hypot(p[0], p[2]) / radius)
+            shade = clamp((.78 + .15 * height + .07 * outer) * (1 + .045 * variation), .70, 1)
+            colors[i] = (shade, shade, shade * (.98 + .02 * height), 1.0)
+    return result, result_n, colors
+
+
+def foliage(name, positions, normals, scale, lift):
+    """Keep each three-card broadleaf/conifer bough together in an uneven envelope."""
+    block = 12
     assert len(positions) % block == 0
     low = min(p[1] for p in positions)
     high = max(p[1] for p in positions)
@@ -205,8 +268,6 @@ def foliage(name, positions, normals, scale, lift):
         elif name == "white-willow":
             target = (target[0] * 1.02, target[1] - .26 * math.hypot(c[0], c[2]) / radius,
                       target[2] * 1.02)
-        elif name == "pine":
-            target = c
         for local_index, p in enumerate(points):
             rel = sub(p, c)
             sy = size * (.80 if name == "spruce" else .94 if name == "stone-pine" else 1.0)
@@ -262,6 +323,10 @@ def rebuild(name, source):
     if name in ("stone-pine", "maple", "white-willow", "birch"):
         atlas = ROOT / f"assets/trees/textures/{name}-boughs.png"
         glb.replace_image(1, atlas.read_bytes(), f"{name}-branch-sprays")
+    elif name == "pine":
+        # Pine stores its foliage first, unlike the other species; keep image 1 (bark).
+        atlas = ROOT / "assets/trees/textures/pine-bough-v1.png"
+        glb.replace_image(0, atlas.read_bytes(), "pine-needle-bough-v1")
     tint, bark, scale, lift = SPECIES[name]
     triangles = 0
     for mesh in glb.doc["meshes"]:
@@ -273,7 +338,11 @@ def rebuild(name, source):
             triangles += len(glb.values(primitive["indices"])) // 3
             material = glb.doc["materials"][primitive["material"]]
             if material.get("alphaMode") == "MASK":
-                positions, normals, colors = foliage(name, positions, normals, scale, lift)
+                if name == "pine":
+                    positions, normals, colors = pine_foliage(
+                        positions, normals, glb.values(attrs["TEXCOORD_0"]), scale)
+                else:
+                    positions, normals, colors = foliage(name, positions, normals, scale, lift)
                 if name in ("stone-pine", "maple", "white-willow", "birch"):
                     glb.write_values(attrs["TEXCOORD_0"], branch_spray_uvs(len(positions), name))
                 attrs["COLOR_0"] = glb.add_colors(colors)
