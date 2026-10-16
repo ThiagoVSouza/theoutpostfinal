@@ -3,8 +3,8 @@
     python tools/art/refine_trees.py
 
 The source revision is deliberately pinned: running this twice must not keep shrinking
-the cards. Index buffers and triangle counts are preserved. Maple, stone pine and
-white willow use branch-spray atlases; other embedded textures/UVs stay unchanged.
+the cards. Index buffers and triangle counts are preserved. Maple, birch, stone pine
+and white willow use branch-spray atlases; other embedded textures/UVs stay unchanged.
 The runtime adds a two-triangle ground patch, included in the 200-triangle ceiling.
 """
 import argparse
@@ -142,6 +142,22 @@ def willow_drooping_cards(points):
     return result
 
 
+def birch_rising_cards(points):
+    """Keep the birch's delicate sprays rising away from its narrow crown."""
+    centre = mean(points)
+    radial = unit((centre[0], 0.0, centre[2]))
+    result = []
+    for start in (0, 4, 8):
+        card = points[start:start + 4]
+        v = sub(mean(card[2:]), mean(card[:2]))
+        outward_sign = 1.0 if sum(a * b for a, b in zip(v, radial)) >= 0 else -1.0
+        if v[1] * outward_sign < 0:
+            centre_y = mean(card)[1]
+            card = [(x, 2.0 * centre_y - y, z) for x, y, z in card]
+        result.extend(card)
+    return result
+
+
 def foliage(name, positions, normals, scale, lift):
     """Keep each three-card bough together, giving it a smaller uneven envelope.
 
@@ -159,6 +175,8 @@ def foliage(name, positions, normals, scale, lift):
         points = positions[start:start + block]
         if name == "white-willow":
             points = willow_drooping_cards(points)
+        elif name == "birch":
+            points = birch_rising_cards(points)
         c = mean(points)
         theta = math.atan2(c[2], c[0])
         variation = math.sin(group * 2.39996 + .8)
@@ -167,11 +185,13 @@ def foliage(name, positions, normals, scale, lift):
             # Airy sprays need a connected core; keep the outer fringe much lighter.
             interior = clamp(1.0 - math.hypot(c[0], c[2]) / 3.2)
             size *= 1.06 + .24 * interior
-        elif name in ("maple", "white-willow"):
+        elif name in ("maple", "white-willow", "birch"):
             # Keep the deciduous crown full, with extra overlap inside its rounded envelope.
             envelope_distance = math.sqrt((math.hypot(c[0], c[2]) / radius) ** 2
                                           + ((c[1] - centre_y) * 2 / (high - low)) ** 2)
-            size *= 1.08 + .16 * clamp(1.0 - envelope_distance)
+            # Birch needs only a small interior fill, preserving its airy outer branches.
+            growth, fill = (1.0, .08) if name == "birch" else (1.08, .16)
+            size *= growth + fill * clamp(1.0 - envelope_distance)
         lobing = 1.0 + .085 * math.sin(3 * theta + .6) + .045 * math.cos(5 * theta)
         target = (c[0] * lobing, c[1] + lift + .17 * variation, c[2] * lobing)
         if name == "stone-pine":
@@ -196,7 +216,7 @@ def foliage(name, positions, normals, scale, lift):
             envelope = unit((p2[0] / radius, (p2[1] - centre_y) / max(high - low, 1) * 1.6,
                              p2[2] / radius))
             # Branch sprays share the crown's lighting, with some local bough volume retained.
-            local_weight = (.25 if name == "stone-pine" else .40 if name == "maple"
+            local_weight = (.25 if name == "stone-pine" else .40 if name in ("maple", "birch")
                             else .35 if name == "white-willow" else .65)
             n = unit(add(add(mul(local, local_weight), mul(envelope, 1 - local_weight)), (0, .22, 0)))
             # Keep a soft underside without the uniformly upward-facing original normals.
@@ -209,7 +229,7 @@ def foliage(name, positions, normals, scale, lift):
     return result, result_n, colors
 
 
-def branch_spray_uvs(count):
+def branch_spray_uvs(count, name):
     """Give the three plates in each bough complementary sprays from the 2x2 atlas."""
     assert count % 4 == 0
     result = []
@@ -217,14 +237,19 @@ def branch_spray_uvs(count):
         group, plate = divmod(card, 3)
         cell = (group * 3 + plate) % 4
         x, y = cell % 2, cell // 2
+        # Birch's source plates face the opposite way to the other three species.
+        flip_v = plate != 0 if name == "birch" else plate == 0
         corners = [(0, 1), (1, 1), (1, 0), (0, 0)]
         # Flip whole sprays to break repetition while preserving the transparent cell margin.
         for u, v in corners:
             if group % 2:
                 u = 1 - u
-            # This primary plate's local V points inward; its painted stem belongs there.
-            if plate == 0:
+            # Put the painted stem toward the crown and the spray tips outward.
+            if flip_v:
                 v = 1 - v
+            if name == "birch":
+                # The birch atlas has extra padding; use more of each leafy bough.
+                u, v = .04 + .92 * u, .04 + .92 * v
             result.append(((x + u) * .5, (y + v) * .5))
     return result
 
@@ -234,7 +259,7 @@ def rebuild(name, source):
     raw = subprocess.run(["git", "show", f"{source}:{relative}"], cwd=ROOT,
                          check=True, capture_output=True).stdout
     glb = GLB(raw)
-    if name in ("stone-pine", "maple", "white-willow"):
+    if name in ("stone-pine", "maple", "white-willow", "birch"):
         atlas = ROOT / f"assets/trees/textures/{name}-boughs.png"
         glb.replace_image(1, atlas.read_bytes(), f"{name}-branch-sprays")
     tint, bark, scale, lift = SPECIES[name]
@@ -249,8 +274,8 @@ def rebuild(name, source):
             material = glb.doc["materials"][primitive["material"]]
             if material.get("alphaMode") == "MASK":
                 positions, normals, colors = foliage(name, positions, normals, scale, lift)
-                if name in ("stone-pine", "maple", "white-willow"):
-                    glb.write_values(attrs["TEXCOORD_0"], branch_spray_uvs(len(positions)))
+                if name in ("stone-pine", "maple", "white-willow", "birch"):
+                    glb.write_values(attrs["TEXCOORD_0"], branch_spray_uvs(len(positions), name))
                 attrs["COLOR_0"] = glb.add_colors(colors)
                 material.setdefault("extras", {})["outpostFoliageNormalMode"] = "volume"
                 material["extras"]["outpostVisualPass"] = 1
