@@ -19,12 +19,16 @@ extends Control
 ## add_child below, where _process does not get a turn.
 
 const GAME_SCENE := "res://scenes/main.tscn"
+const LoadingView := preload("res://scripts/ui/loading_screen_view.gd")
+
+## Used by the visual review tool. Normal startup never waits for a preview or a timer.
+@export var preview_mode := false
 
 ## Read on the loader thread alongside the game scene, and held until the scene has been built.
 ## Assets a scene loads by path from its own _ready would otherwise be read on the main thread
 ## inside add_child; requesting them here overlaps them with the scene load, and the scene's own
-## load() becomes a cache hit. Empty for now: the blank scene loads nothing by path.
-const PRELOAD: Array[String] = []
+## load() becomes a cache hit. The forest creates its tree-base material at runtime.
+const PRELOAD: Array[String] = ["res://shaders/tree_base.gdshader"]
 
 ## Shares of the bar for each stage, so the bar moves at roughly the rate work completes.
 ## Re-measure with `godot --path . -- --profile-startup` once the scene has real weight.
@@ -51,6 +55,8 @@ var preloading: Array[String] = []
 var preloaded: Array[Resource] = []
 var painted := false
 var leaving := false
+var failed := false
+var pending_scene: PackedScene
 var game: Node
 var warm_from := 0
 var target := 0.0
@@ -61,6 +67,7 @@ var overlay: ColorRect
 var bar: ProgressBar
 var stage_label: Label
 var percent_label: Label
+var view: Control
 var profile := false
 var started_usec := 0
 var stage_usec := 0
@@ -75,32 +82,43 @@ func _ready() -> void:
 	started_usec = Time.get_ticks_usec()
 	stage_usec = started_usec
 	_build_ui()
-	_set_progress(0.0, "Loading resources")
+	_set_progress(0.0, "Gathering resources")
+	if preview_mode:
+		set_process(false)
+		return
 	var error := ResourceLoader.load_threaded_request(GAME_SCENE)
 	if error != OK:
 		_fail("Could not start loading the game: " + error_string(error))
 		return
 	# A preload that cannot be started is not a failure: whoever needs the asset still load()s
 	# it, and the only cost is that they pay for it on the main thread.
-	for path in PRELOAD:
+	# The music and sound effects are read here too, so they count towards the bar and nothing is
+	# read from disk once the game shows (see AudioManager).
+	for path in PRELOAD + Audio.preload_paths():
 		if ResourceLoader.exists(path) and ResourceLoader.load_threaded_request(path) == OK:
 			preloading.append(path)
 	loading = true
 
 func _process(delta: float) -> void:
-	if overlay == null: return
+	if overlay == null or failed or preview_mode: return
 	# Never instantiate before this screen has been drawn once, or a warm start would do all of
 	# it in the first frame and leave the boot colour up until it finished.
-	if loading and painted: _poll_load()
+	if pending_scene != null: _instantiate_game()
+	elif loading and painted: _poll_load()
 	elif game != null and not leaving: _poll_build()
+	if failed: return
 	painted = true
 	shown = move_toward(shown, target, maxf(MINIMUM_RATE, (target - shown) * CATCH_UP_RATE) * delta)
 	bar.value = shown * 100.0
-	percent_label.text = "%d%%" % roundi(shown * 100.0)
+	percent_label.text = "%d%%" % floori(shown * 100.0)
 	if game != null and not leaving and shown >= 1.0:
 		leaving = true
 		if profile:
 			print("STARTUP_TOTAL_MS ", (Time.get_ticks_usec() - started_usec) / 1000.0)
+		# Take the audio into its cache while the loaded streams are still held here, then bring the
+		# game's music in under the overlay's fade.
+		Audio.warm()
+		Audio.play_music(AudioManager.GAME_MUSIC, AudioManager.MUSIC_INTRO_FADE)
 		var fade := create_tween()
 		fade.tween_property(overlay, "modulate:a", 0.0, 0.25)
 		fade.tween_callback(_reveal)
@@ -120,7 +138,7 @@ func _poll_load() -> void:
 			done = false
 	progress /= float(preloading.size() + 1)
 	if not done:
-		_set_progress(progress * LOAD_SHARE, "Loading resources")
+		_set_progress(progress * LOAD_SHARE, "Gathering resources")
 		return
 	loading = false
 	if status != ResourceLoader.THREAD_LOAD_LOADED:
@@ -134,13 +152,21 @@ func _poll_load() -> void:
 		var resource := ResourceLoader.load_threaded_get(path)
 		if resource != null:
 			preloaded.append(resource)
-	_set_progress(LOAD_SHARE, "Building the scene")
-	game = scene.instantiate()
+	_set_progress(LOAD_SHARE, "Shaping the world")
+	# Let this status actually draw before synchronous scene construction begins next frame.
+	pending_scene = scene
+
+func _instantiate_game() -> void:
+	game = pending_scene.instantiate()
+	pending_scene = null
+	if game == null:
+		_fail("The game scene could not be created. Please try again.")
+		return
 	add_child(game)
 	# Behind this screen, so it draws and compiles its shaders while the bar is still up.
 	move_child(game, 0)
 	warm_from = Engine.get_frames_drawn()
-	_set_progress(INSTANTIATE_SHARE, "Building the scene")
+	_set_progress(INSTANTIATE_SHARE, "Shaping the world")
 
 ## The scene's own build work, then real frames it has drawn. Both are counts of finished work
 ## rather than elapsed time. A scene opts in to the build stage by exposing build_fraction(),
@@ -149,7 +175,7 @@ func _poll_build() -> void:
 	if game.has_method("build_fraction"):
 		var fraction := clampf(float(game.build_fraction()), 0.0, 1.0)
 		if fraction < 1.0:
-			_set_progress(INSTANTIATE_SHARE + fraction * (BUILD_SHARE - INSTANTIATE_SHARE), "Building the scene")
+			_set_progress(INSTANTIATE_SHARE + fraction * (BUILD_SHARE - INSTANTIATE_SHARE), "Shaping the world")
 			# The warm-up counts from the end of the build, not from instantiation: frames drawn
 			# before the scene is whole are not evidence that the whole scene draws.
 			warm_from = Engine.get_frames_drawn()
@@ -157,7 +183,7 @@ func _poll_build() -> void:
 	var drawn := Engine.get_frames_drawn() - warm_from
 	var amount := clampf(float(drawn) / WARM_FRAMES, 0.0, 1.0)
 	_set_progress(BUILD_SHARE + amount * (1.0 - BUILD_SHARE),
-		"Ready" if drawn >= WARM_FRAMES else "Compiling shaders")
+		"Your outpost awaits" if drawn >= WARM_FRAMES else "Preparing the view")
 
 func _set_progress(amount: float, text: String) -> void:
 	# Progress only ever moves forward: a later stage reporting less is a reporting bug.
@@ -181,9 +207,17 @@ func _reveal() -> void:
 
 func _fail(text: String) -> void:
 	loading = false
+	failed = true
+	pending_scene = null
 	stage_label.text = text
-	stage_label.add_theme_color_override("font_color", UITheme.WARNING)
 	percent_label.text = ""
+	view.show_error()
+	set_process(false)
+
+func _retry() -> void:
+	var error := get_tree().reload_current_scene()
+	if error != OK:
+		_fail("Unable to restart loading. Please close and reopen the game.")
 
 func _build_ui() -> void:
 	# The game builds its own overlays on CanvasLayers, which would draw over a plain Control.
@@ -192,33 +226,14 @@ func _build_ui() -> void:
 	layer.layer = 100
 	add_child(layer)
 	overlay = ColorRect.new()
-	overlay.color = UITheme.BACKGROUND
+	overlay.color = Color("171610")
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(overlay)
-	var centre := CenterContainer.new()
-	centre.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	overlay.add_child(centre)
-	var column := VBoxContainer.new()
-	column.custom_minimum_size.x = 520
-	column.add_theme_constant_override("separation", 10)
-	centre.add_child(column)
-	column.add_child(UITheme.logo(100.0))
-	var spacer := Control.new()
-	spacer.custom_minimum_size.y = 26
-	column.add_child(spacer)
-	bar = ProgressBar.new()
-	bar.min_value = 0.0
-	bar.max_value = 100.0
-	bar.value = 0.0
-	bar.show_percentage = false
-	bar.custom_minimum_size.y = 10
-	bar.add_theme_stylebox_override("background", UITheme.bar_style(UITheme.TRACK, UITheme.TRACK_BORDER))
-	bar.add_theme_stylebox_override("fill", UITheme.bar_style(UITheme.FILL))
-	column.add_child(bar)
-	var row := HBoxContainer.new()
-	column.add_child(row)
-	stage_label = UITheme.label("Starting", 13, UITheme.MUTED)
-	stage_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(stage_label)
-	percent_label = UITheme.label("0%", 13, UITheme.MUTED)
-	row.add_child(percent_label)
+	view = LoadingView.new()
+	view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(view)
+	bar = view.bar
+	stage_label = view.stage_label
+	percent_label = view.percent_label
+	view.retry_button.pressed.connect(_retry)
+	view.quit_button.pressed.connect(func(): Audio.quit_cleanly())

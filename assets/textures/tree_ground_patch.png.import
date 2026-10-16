@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ji8t1apm3ari"
-path.bptc="res://.godot/imported/birch_birch-direct-branch-1024.png-0c01fd374f986af8698d1513beb43561.bptc.ctex"
+uid="uid://u2icxtfu60yo"
+path.bptc="res://.godot/imported/tree_ground_patch.png-66221bf17ef9996a2b1cb5ef10a84551.bptc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/trees/birch_birch-direct-branch-1024.png"
-dest_files=["res://.godot/imported/birch_birch-direct-branch-1024.png-0c01fd374f986af8698d1513beb43561.bptc.ctex"]
+source_file="res://assets/textures/tree_ground_patch.png"
+dest_files=["res://.godot/imported/tree_ground_patch.png-66221bf17ef9996a2b1cb5ef10a84551.bptc.ctex"]
 
 [params]
 

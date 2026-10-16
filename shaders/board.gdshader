@@ -53,14 +53,22 @@ uniform float sheen_mean = 0.151;
 uniform vec4 deep_color : source_color = vec4(0.035, 0.20, 0.32, 1.0);
 
 uniform sampler2D grass_map : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
-// Metres covered by one repeat of the grass tile: 1536 texels of the diorama's 5.86 cm x 5.37 cm.
-uniform vec2 grass_tile_size = vec2(90.0, 82.5);
+uniform sampler2D grass_macro_map : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+// Small tuft detail repeats over 30 m. The soft source keeps its original meadow-scale period,
+// using the same two texture reads as before the visual pass.
+uniform vec2 grass_tile_size = vec2(30.0, 27.5);
+uniform vec2 grass_macro_tile_size = vec2(657.0, 602.25);
+// Ratio of measured linear-light means (old / detail), so the added blades do not regrade the map.
+uniform vec3 grass_detail_gain = vec3(1.111900, 1.146304, 1.123724);
 // The tile's mean colour, printed by tools/make_grass_tile.gd. The large-scale variation is divided
 // by it, so the grass averages to the same colour at every zoom.
 uniform vec3 grass_mean : source_color = vec3(0.5058, 0.4979, 0.2848);
 // How strongly a second, much larger copy of the tile varies the grass, breaking up the 90 m
 // repeat. At 0 the repeat shows as a lattice from a kilometre up.
 uniform float grass_variation = 0.6;
+// Slightly stronger local pigment variation helps the meadow read at settlement scale without
+// adding geometry, repeated procedural spots, or another texture lookup. The mean is preserved.
+uniform float grass_detail_contrast = 1.08;
 
 // Holding the sea and grass to their old colours (see the header). The lights are measured, not
 // derived, by drawing a flat upward-facing albedo under each lighting with the tonemap off: under
@@ -69,7 +77,7 @@ uniform float grass_variation = 0.6;
 // tonemap is not ACES, since the inverse below is ACES's.
 uniform bool hold_colours = false;
 uniform vec3 old_light = vec3(1.057, 1.042, 1.021);
-uniform vec3 new_light = vec3(1.710, 1.714, 1.405);
+uniform vec3 new_light = vec3(1.69575, 1.67591, 1.34783);
 uniform float tonemap_exposure = 1.0;
 uniform float tonemap_white = 1.0;
 
@@ -201,11 +209,11 @@ vec3 sea(vec2 p) {
 }
 
 vec3 grass(vec2 p) {
-	vec3 near = texture(grass_map, p / grass_tile_size).rgb;
-	// The same tile 7.3 times larger and turned, so its mottling becomes meadow-scale patches that
-	// never line up with the near copy's repeat.
-	vec2 far_uv = (mat2(vec2(0.80, 0.60), vec2(-0.60, 0.80)) * p) / (grass_tile_size * 7.3);
-	vec3 far = texture(grass_map, far_uv).rgb;
+	vec3 near = texture(grass_map, p / grass_tile_size).rgb * grass_detail_gain;
+	near = max(grass_mean + (near - grass_mean) * grass_detail_contrast, vec3(0.0));
+	// The soft original tile gives broad patches without enlarging individual grass blades.
+	vec2 far_uv = (mat2(vec2(0.80, 0.60), vec2(-0.60, 0.80)) * p) / grass_macro_tile_size;
+	vec3 far = texture(grass_macro_map, far_uv).rgb;
 	return near * mix(vec3(1.0), far / grass_mean, grass_variation);
 }
 

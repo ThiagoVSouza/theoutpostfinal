@@ -8,6 +8,7 @@ export_presets.cfg
 # Run output
 *.log
 /previews/
+__pycache__/
 
 # OS / editor
 .DS_Store

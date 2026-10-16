@@ -2,29 +2,28 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cc002wkqt4jfb"
-path.bptc="res://.godot/imported/maple_maple-v2-dense-card-atlas.png-f563a135e0765e0d538947ee9155a477.bptc.ctex"
+uid="uid://cyild6axha52b"
+path="res://.godot/imported/stone-pine-boughs.png-f2d1011d118161de4d498107c38b494f.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/trees/maple_maple-v2-dense-card-atlas.png"
-dest_files=["res://.godot/imported/maple_maple-v2-dense-card-atlas.png-f563a135e0765e0d538947ee9155a477.bptc.ctex"]
+source_file="res://assets/trees/textures/stone-pine-boughs.png"
+dest_files=["res://.godot/imported/stone-pine-boughs.png-f2d1011d118161de4d498107c38b494f.ctex"]
 
 [params]
 
-compress/mode=2
-compress/high_quality=true
+compress/mode=0
+compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

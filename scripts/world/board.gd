@@ -15,6 +15,7 @@ extends Node3D
 @export var frame_shader: Shader
 @export var sheen_map: Texture2D
 @export var grass_map: Texture2D
+@export var grass_macro_map: Texture2D
 
 ## The test land mass of grassland at the centre of the board: a circle of TEST_LAND_RADIUS metres
 ## whose edge is pushed in and out by sine waves of 2, 3, 4, 5, 7 and 11 bumps around it, with these
@@ -86,6 +87,7 @@ func _build_surface() -> void:
 	surface_material.set_shader_parameter("subtile_size", WorldSpec.SUBTILE)
 	surface_material.set_shader_parameter("sheen_map", sheen_map)
 	surface_material.set_shader_parameter("grass_map", grass_map)
+	surface_material.set_shader_parameter("grass_macro_map", grass_macro_map)
 	surface_material.set_shader_parameter("land_centre", TEST_LAND_CENTRE)
 	surface_material.set_shader_parameter("land_radius", TEST_LAND_RADIUS)
 	surface_material.set_shader_parameter("land_amplitude", PackedFloat32Array(TEST_LAND_AMPLITUDE))

@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cjihcx23122rs"
-path.bptc="res://.godot/imported/white-willow_white-willow-v2-dense-card-atlas.png-eb6313a2eba24285a590560bb32cae2e.bptc.ctex"
+uid="uid://cc002wkqt4jfb"
+path.bptc="res://.godot/imported/maple_maple-branch-sprays.png-bd113eb57393e9310048cc58684c323f.bptc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/trees/white-willow_white-willow-v2-dense-card-atlas.png"
-dest_files=["res://.godot/imported/white-willow_white-willow-v2-dense-card-atlas.png-eb6313a2eba24285a590560bb32cae2e.bptc.ctex"]
+source_file="res://assets/trees/maple_maple-branch-sprays.png"
+dest_files=["res://.godot/imported/maple_maple-branch-sprays.png-bd113eb57393e9310048cc58684c323f.bptc.ctex"]
 
 [params]
 

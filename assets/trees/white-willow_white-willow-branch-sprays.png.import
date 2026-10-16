@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bnpsy6st1vnld"
-path.bptc="res://.godot/imported/pine_bough_rgba_dense.png-76cdc5c26c504d320e3f002a1bec4f8e.bptc.ctex"
+uid="uid://cjihcx23122rs"
+path.bptc="res://.godot/imported/white-willow_white-willow-branch-sprays.png-817a0e073f69db8502e79ede9151d97e.bptc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/trees/pine_bough_rgba_dense.png"
-dest_files=["res://.godot/imported/pine_bough_rgba_dense.png-76cdc5c26c504d320e3f002a1bec4f8e.bptc.ctex"]
+source_file="res://assets/trees/white-willow_white-willow-branch-sprays.png"
+dest_files=["res://.godot/imported/white-willow_white-willow-branch-sprays.png-817a0e073f69db8502e79ede9151d97e.bptc.ctex"]
 
 [params]
 

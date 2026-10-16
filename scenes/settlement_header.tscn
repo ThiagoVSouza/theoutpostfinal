@@ -1,0 +1,12 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/settlement_header.gd" id="1_header"]
+
+[node name="SettlementHeader" type="Control"]
+layout_mode = 3
+offset_right = 300.0
+offset_bottom = 82.0
+mouse_filter = 2
+script = ExtResource("1_header")
+settlement_name = "Black Raven"
+settlement_rank = "Outpost"

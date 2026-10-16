@@ -1,11 +1,11 @@
 // Foliage cards for the current tree set: alpha-cut and double-sided, drawn as the models' viewer
 // draws them (TheOutpostModels viewer/foliage-material.js).
 //
-// Most species' cards carry normals that describe the whole crown's volume rather than a leaf
+// The visual-pass cards carry normals that describe the whole crown's volume rather than a leaf
 // surface; their GLB materials say so with outpostFoliageNormalMode "volume". Godot, like three.js,
 // reverses a double-sided surface's normal on its back face, which for those cards turns the far
-// side of every card near black, so for them that reversal is undone. Cards without the mark (the
-// pine's) keep the ordinary reversal: their normals are the card's own, and undoing it would light
+// side of every card near black, so for them that reversal is undone. Cards without the mark
+// keep the ordinary reversal: their normals are the card's own, and undoing it would light
 // their back faces from the wrong side.
 shader_type spatial;
 render_mode cull_disabled, diffuse_burley;
@@ -18,7 +18,9 @@ uniform bool volume_normals = false;
 
 void fragment() {
 	vec4 color = texture(albedo_texture, UV) * albedo_color;
-	ALBEDO = color.rgb;
+	// Vertex colours carry soft, direction-independent bough occlusion. They do not bake
+	// the sun into the texture, so rotating an instance still lights its correct side.
+	ALBEDO = color.rgb * COLOR.rgb;
 	ALPHA = color.a;
 	ALPHA_SCISSOR_THRESHOLD = alpha_cutoff;
 	ROUGHNESS = roughness;

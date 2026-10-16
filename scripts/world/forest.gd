@@ -53,8 +53,12 @@ var paint_size := 1.0
 var _meshes: Array[ArrayMesh] = []
 var _crown_radius: PackedFloat32Array = []
 var _crown_colour: Array[Color] = []
+## One material for every root patch; the patch is a third surface in the same species MultiMesh.
+## Its ground settings are copied once from Board so the feathered edge follows the meadow grade.
+var _base_material: ShaderMaterial
 
 func _ready() -> void:
+	_base_material = _make_base_material()
 	for scene in species:
 		_add_species(scene)
 
@@ -202,8 +206,8 @@ static func _cover(cover: PackedFloat32Array, colour: PackedFloat32Array, index:
 	colour[index * 3 + 1] += crown.g * amount
 	colour[index * 3 + 2] += crown.b * amount
 
-## Folds one imported tree into a single two-surface mesh, puts its foliage on the foliage shader,
-## and measures its crown.
+## Folds one imported tree into one mesh, puts its foliage on the foliage shader, measures its
+## crown, and appends a two-triangle soil/litter patch. The patch uses the existing batch transform.
 func _add_species(scene: PackedScene) -> void:
 	var tree := scene.instantiate()
 	var mesh := ArrayMesh.new()
@@ -230,13 +234,70 @@ func _add_species(scene: PackedScene) -> void:
 				material = foliage
 				var size := part.mesh.get_aabb().size
 				radius = maxf(size.x, size.z) * 0.5
-				crown = _mean_foliage(leaves) * CANOPY_SHADE
+				crown = _mean_foliage(leaves) * _mean_vertex_colour(part.mesh.surface_get_arrays(surface)) * CANOPY_SHADE
 			mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, part.mesh.surface_get_arrays(surface))
 			mesh.surface_set_material(mesh.get_surface_count() - 1, material)
 	tree.free()
+	_add_base_surface(mesh, clampf(radius * 0.48, 0.85, 2.3))
 	_meshes.append(mesh)
 	_crown_radius.append(radius)
 	_crown_colour.append(crown)
+
+func _make_base_material() -> ShaderMaterial:
+	var material := ShaderMaterial.new()
+	material.shader = load("res://shaders/tree_base.gdshader") as Shader
+	material.set_shader_parameter("ground_patch", load("res://assets/textures/tree_ground_patch.png"))
+	var board := get_parent().get_node_or_null("Board") as Board
+	if board != null and board.surface_material != null:
+		for parameter in ["grass_map", "grass_macro_map", "grass_tile_size", "grass_macro_tile_size", "grass_mean", "grass_variation",
+				"grass_detail_gain", "grass_detail_contrast", "hold_colours", "old_light", "new_light",
+				"tonemap_exposure", "tonemap_white"]:
+			var value: Variant = board.surface_material.get_shader_parameter(parameter)
+			if value != null:
+				material.set_shader_parameter(parameter, value)
+	else:
+		# Also usable by a standalone tree gallery. No per-frame dependency on the board is needed.
+		material.set_shader_parameter("grass_map", load("res://assets/textures/grass_meadow_detail.png"))
+		material.set_shader_parameter("grass_macro_map", load("res://assets/textures/grass_meadow.png"))
+	return material
+
+static func _base_arrays(radius: float) -> Array:
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	# A small lift avoids depth fighting with the board; the irregular outline lives in the shader.
+	arrays[Mesh.ARRAY_VERTEX] = PackedVector3Array([
+		Vector3(-radius, 0.018, -radius), Vector3(radius, 0.018, -radius),
+		Vector3(radius, 0.018, radius), Vector3(-radius, 0.018, radius)])
+	arrays[Mesh.ARRAY_NORMAL] = PackedVector3Array([Vector3.UP, Vector3.UP, Vector3.UP, Vector3.UP])
+	arrays[Mesh.ARRAY_TEX_UV] = PackedVector2Array([
+		Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1)])
+	arrays[Mesh.ARRAY_INDEX] = PackedInt32Array([0, 1, 2, 0, 2, 3])
+	return arrays
+
+func _add_base_surface(mesh: ArrayMesh, radius: float) -> void:
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, _base_arrays(radius))
+	mesh.surface_set_material(mesh.get_surface_count() - 1, _base_material)
+
+## Vertex colour carries the crown's baked interior shading. Include it in the distant canopy
+## average as well as the live foliage shader, weighted by triangle area so small bough cards do
+## not count as much as large ones. This is measured once when a species loads.
+static func _mean_vertex_colour(arrays: Array) -> Color:
+	var colours: PackedColorArray = arrays[Mesh.ARRAY_COLOR] if arrays[Mesh.ARRAY_COLOR] != null else PackedColorArray()
+	if colours.is_empty():
+		return Color.WHITE
+	var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX] if arrays[Mesh.ARRAY_INDEX] != null else PackedInt32Array()
+	var element_count := indices.size() if not indices.is_empty() else vertices.size()
+	var total := Color(0, 0, 0, 0)
+	var weight := 0.0
+	for triangle in range(0, element_count - 2, 3):
+		var a := indices[triangle] if not indices.is_empty() else triangle
+		var b := indices[triangle + 1] if not indices.is_empty() else triangle + 1
+		var c := indices[triangle + 2] if not indices.is_empty() else triangle + 2
+		var area := (vertices[b] - vertices[a]).cross(vertices[c] - vertices[a]).length()
+		total += (colours[a] + colours[b] + colours[c]) * (area / 3.0)
+		weight += area
+	return Color(total.r / weight, total.g / weight, total.b / weight) if weight > 0.0 else Color.WHITE
 
 ## The foliage texture's average colour where it is leaf rather than cutout, in linear light.
 static func _mean_foliage(leaves: BaseMaterial3D) -> Color:
