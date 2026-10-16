@@ -92,7 +92,9 @@ func _ready() -> void:
 		return
 	# A preload that cannot be started is not a failure: whoever needs the asset still load()s
 	# it, and the only cost is that they pay for it on the main thread.
-	for path in PRELOAD:
+	# The music and sound effects are read here too, so they count towards the bar and nothing is
+	# read from disk once the game shows (see AudioManager).
+	for path in PRELOAD + Audio.preload_paths():
 		if ResourceLoader.exists(path) and ResourceLoader.load_threaded_request(path) == OK:
 			preloading.append(path)
 	loading = true
@@ -113,6 +115,10 @@ func _process(delta: float) -> void:
 		leaving = true
 		if profile:
 			print("STARTUP_TOTAL_MS ", (Time.get_ticks_usec() - started_usec) / 1000.0)
+		# Take the audio into its cache while the loaded streams are still held here, then bring the
+		# game's music in under the overlay's fade.
+		Audio.warm()
+		Audio.play_music(AudioManager.GAME_MUSIC, AudioManager.MUSIC_INTRO_FADE)
 		var fade := create_tween()
 		fade.tween_property(overlay, "modulate:a", 0.0, 0.25)
 		fade.tween_callback(_reveal)
@@ -230,4 +236,4 @@ func _build_ui() -> void:
 	stage_label = view.stage_label
 	percent_label = view.percent_label
 	view.retry_button.pressed.connect(_retry)
-	view.quit_button.pressed.connect(func(): get_tree().quit())
+	view.quit_button.pressed.connect(func(): Audio.quit_cleanly())

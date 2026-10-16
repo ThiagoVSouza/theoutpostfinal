@@ -16,6 +16,10 @@ config/features=PackedStringArray("4.7")
 boot_splash/bg_color=Color(0.063, 0.060, 0.049, 1)
 boot_splash/show_image=false
 
+[autoload]
+
+Audio="*res://scripts/audio/audio_manager.gd"
+
 [display]
 
 window/size/viewport_width=1600

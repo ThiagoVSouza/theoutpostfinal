@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "music": {
+    "game": {
+      "file": "music/frostfire_tales_loop.ogg",
+      "loop": true,
+      "volume": 0.8
+    }
+  },
+  "sfx": {
+    "ui_click": {
+      "file": "sfx/ui/button_press_599.ogg",
+      "loop": false,
+      "volume": 0.75
+    },
+    "ui_hover": {
+      "file": "sfx/ui/whoosh.wav",
+      "loop": false,
+      "volume": 0.285,
+      "start": 0.2,
+      "length": 0.025,
+      "fade": 0.005
+    }
+  },
+  "ambience": {}
+}
