@@ -2,8 +2,8 @@ class_name Board
 extends Node3D
 ## The 100 km board and the wood frame around it, built from WorldSpec.
 ##
-## The surface is a single quad: everything on it, the ocean and the grid included, is drawn by its
-## shader from the world position, so the board costs the same at any size. The frame is four boxes
+## The surface is a single quad: everything on it, the ocean, the land and the grid included, is
+## drawn by its shader from the world position, so the board costs the same at any size. The frame is four boxes
 ## sharing one material whose shader works out the mitred corners itself.
 ##
 ## The shaders and the sheen texture are set in the scene rather than preloaded here. This script
@@ -14,6 +14,15 @@ extends Node3D
 @export var board_shader: Shader
 @export var frame_shader: Shader
 @export var sheen_map: Texture2D
+@export var grass_map: Texture2D
+
+## The test land mass of grassland at the centre of the board: a circle of TEST_LAND_RADIUS metres
+## whose edge is pushed in and out by sine waves of 2, 3, 4, 5, 7 and 11 bumps around it, with these
+## amplitudes (fractions of the radius) and phases. About 2.2 km to 5 km across.
+const TEST_LAND_CENTRE := Vector2.ZERO
+const TEST_LAND_RADIUS := 1800.0
+const TEST_LAND_AMPLITUDE: Array[float] = [0.12, 0.10, 0.07, 0.05, 0.035, 0.02]
+const TEST_LAND_PHASE: Array[float] = [0.4, 2.1, 4.7, 1.3, 3.6, 5.5]
 
 var grid_visible := true:
 	set(value):
@@ -43,6 +52,11 @@ func _build_surface() -> void:
 	surface_material.set_shader_parameter("tile_size", WorldSpec.TILE)
 	surface_material.set_shader_parameter("subtile_size", WorldSpec.SUBTILE)
 	surface_material.set_shader_parameter("sheen_map", sheen_map)
+	surface_material.set_shader_parameter("grass_map", grass_map)
+	surface_material.set_shader_parameter("land_centre", TEST_LAND_CENTRE)
+	surface_material.set_shader_parameter("land_radius", TEST_LAND_RADIUS)
+	surface_material.set_shader_parameter("land_amplitude", PackedFloat32Array(TEST_LAND_AMPLITUDE))
+	surface_material.set_shader_parameter("land_phase", PackedFloat32Array(TEST_LAND_PHASE))
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(WorldSpec.BOARD_SIZE, WorldSpec.BOARD_SIZE)
 	plane.material = surface_material

@@ -43,8 +43,7 @@ var _started := false
 
 ## Advances to the camera's current zoom. The first call snaps every fade to its target.
 func update(camera: Camera3D, delta: float) -> void:
-	# Pixels actually drawn, not the scaled UI height: under the canvas_items stretch the two differ.
-	var pixel_height := float(camera.get_viewport().get_texture().get_size().y)
+	var pixel_height := drawn_height(camera.get_viewport())
 	var vertical := absf(camera.global_basis.y.dot(Vector3.UP))
 	tile_pixels = WorldSpec.TILE * pixel_height / maxf(camera.size, 0.001) * vertical
 	tier = desired_tier(tier, tile_pixels)
@@ -52,6 +51,15 @@ func update(camera: Camera3D, delta: float) -> void:
 	_started = true
 	sheen_fade = move_toward(sheen_fade, smoothstep(SHEEN_FADE_MIN_PIXELS, SHEEN_FADE_MAX_PIXELS, tile_pixels), step)
 	grid_fade = move_toward(grid_fade, smoothstep(GRID_NONE_PIXELS, GRID_FULL_PIXELS, tile_pixels), step)
+
+## Pixels the 3D view is actually drawn at, vertically. Not the scaled UI height, and not
+## get_texture().get_size() either: under the canvas_items stretch, in Godot 4.7.1, that reports
+## 1167 for a frame drawn at 1080, the same 8% error TheOutpostMap2's LOD carries. The window's own
+## size is what the frame is rendered at.
+static func drawn_height(viewport: Viewport) -> float:
+	if viewport is Window: return float((viewport as Window).size.y)
+	if viewport is SubViewport: return float((viewport as SubViewport).size.y)
+	return float(viewport.get_visible_rect().size.y)
 
 static func desired_tier(current: int, pixels: float) -> int:
 	var next := clampi(current, Tier.DETAIL, Tier.STRATEGIC)

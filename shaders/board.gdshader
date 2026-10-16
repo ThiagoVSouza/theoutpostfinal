@@ -1,8 +1,18 @@
-// The board's surface: open ocean everywhere for now, with the tile and subtile grid over it.
+// The board's surface: ocean, one test land mass of grassland, and the tile and subtile grid over
+// both.
 //
-// The sea is TheOutpostMap2's grid_water.gdshader with everything about coasts taken out, since
-// there is no land yet: its deep-water colour and its baked sheen. Map2 measures in units of
-// 5.7735 m; every size here has been converted to metres.
+// The sea is TheOutpostMap2's grid_water.gdshader with everything about coasts taken out: its
+// deep-water colour and its baked sheen. Map2 measures in units of 5.7735 m; every size here has
+// been converted to metres.
+//
+// The land is drawn by this same shader rather than by a mesh of its own, so the board stays one
+// quad, the grid crosses the coast without a join, and nothing is discarded (discards cost Map2 3.3
+// ms of its 16 ms frame). The grass is Astra's highland-meadow ground made into a repeating tile by
+// tools/make_grass_tile.gd. Its cost is in texture reads, not maths: Map2's investigation found the
+// ground's textures cost about 1 ms all told and its noise and loops about 8.
+//
+// The test land mass is flat and its outline is a circle bent by a few sine waves around it, cheap
+// enough to evaluate per pixel. A real map will come from authored data instead.
 //
 // The sea keeps one colour at every level of detail. Map2 faded its sheen to nothing and then
 // blended to a brighter strategic-map ocean, so its sea changed colour twice on the way out: darker
@@ -35,6 +45,24 @@ uniform float sheen_world_size = 138.564;
 // positions. Re-measure it if the tile is ever rebaked.
 uniform float sheen_mean = 0.151;
 uniform vec4 deep_color : source_color = vec4(0.035, 0.20, 0.32, 1.0);
+
+uniform sampler2D grass_map : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+// Metres covered by one repeat of the grass tile: 1536 texels of the diorama's 5.86 cm x 5.37 cm.
+uniform vec2 grass_tile_size = vec2(90.0, 82.5);
+// The tile's mean colour, printed by tools/make_grass_tile.gd. The large-scale variation is divided
+// by it, so the grass averages to the same colour at every zoom.
+uniform vec3 grass_mean : source_color = vec3(0.5058, 0.4979, 0.2848);
+// How strongly a second, much larger copy of the tile varies the grass, breaking up the 90 m
+// repeat. At 0 the repeat shows as a lattice from a kilometre up.
+uniform float grass_variation = 0.6;
+
+// The test land mass: a circle of land_radius metres around land_centre, its edge pushed in and
+// out by sine waves of 2 to 11 bumps around it, each as a fraction of the radius.
+uniform vec2 land_centre = vec2(0.0);
+uniform float land_radius = 1800.0;
+uniform float land_amplitude[6];
+uniform float land_phase[6];
+const float LAND_LOBES[6] = float[](2.0, 3.0, 4.0, 5.0, 7.0, 11.0);
 
 // Driven by ViewLod: how much of the glitter's detail to draw, and how much of the grid belongs to
 // the current level of detail.
@@ -78,12 +106,20 @@ float map_grid(vec2 p, float footprint) {
 	return grid;
 }
 
-void vertex() {
-	world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+// Roughly how far inside the test land mass p is, in metres: positive on land, negative at sea.
+// Measured along the radius rather than to the nearest point of the edge, which is exact enough to
+// anti-alias the coast against.
+float land_inland(vec2 p) {
+	vec2 offset = p - land_centre;
+	float angle = atan(offset.y, offset.x);
+	float edge = 1.0;
+	for (int i = 0; i < 6; i++) {
+		edge += land_amplitude[i] * sin(LAND_LOBES[i] * angle + land_phase[i]);
+	}
+	return edge * land_radius - length(offset);
 }
 
-void fragment() {
-	vec2 p = world_position.xz;
+vec3 sea(vec2 p) {
 	// Two copies of the sheen tile at mismatched scales and drift rates: the glitter in R rides
 	// through the broad bands in G, and the periods never line up, so the tile does not read as a
 	// grid. The second copy is turned as well as rescaled, or both copies' swell bands run parallel
@@ -98,7 +134,31 @@ void fragment() {
 		sheen = mix(sheen_mean, glitter * (0.55 + 0.8 * band), sheen_fade);
 	}
 	// Added to the albedo rather than the emission, so shadows can still put the sparkle out.
-	vec3 color = deep_color.rgb + sheen_tint.rgb * sheen * sheen_strength;
+	return deep_color.rgb + sheen_tint.rgb * sheen * sheen_strength;
+}
+
+vec3 grass(vec2 p) {
+	vec3 near = texture(grass_map, p / grass_tile_size).rgb;
+	// The same tile 7.3 times larger and turned, so its mottling becomes meadow-scale patches that
+	// never line up with the near copy's repeat.
+	vec2 far_uv = (mat2(vec2(0.80, 0.60), vec2(-0.60, 0.80)) * p) / (grass_tile_size * 7.3);
+	vec3 far = texture(grass_map, far_uv).rgb;
+	return near * mix(vec3(1.0), far / grass_mean, grass_variation);
+}
+
+void vertex() {
+	world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+}
+
+void fragment() {
+	vec2 p = world_position.xz;
+	float inland = land_inland(p);
+	// About one pixel of blend across the coast, at any zoom.
+	float reach = max(fwidth(inland), 0.001);
+	float land = smoothstep(-reach * 0.5, reach * 0.5, inland);
+	vec3 color = vec3(0.0);
+	if (land < 1.0) color += sea(p) * (1.0 - land);
+	if (land > 0.0) color += grass(p) * land;
 	if (grid_enabled && grid_fade > 0.0) {
 		// Metres per pixel along the worse screen axis; under a tilted camera the two differ.
 		float footprint = max(length(dFdx(p)), length(dFdy(p)));
@@ -106,10 +166,11 @@ void fragment() {
 	}
 	ALBEDO = color;
 	// Shaded flat. The sea's directional read comes from the sheen tile, not from the Sun; a real
-	// wave normal would track the Sun and undo that.
+	// wave normal would track the Sun and undo that. The test land mass is flat as well.
 	NORMAL = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
 	// A flat plane under a directional light returns one constant specular value across the whole
-	// sea, which reads as plastic, so it is kept broad and dim.
-	ROUGHNESS = 0.42;
-	SPECULAR = 0.22;
+	// sea, which reads as plastic, so it is kept broad and dim. Grass is fully rough and barely
+	// reflects at all.
+	ROUGHNESS = mix(0.42, 1.0, land);
+	SPECULAR = mix(0.22, 0.1, land);
 }
