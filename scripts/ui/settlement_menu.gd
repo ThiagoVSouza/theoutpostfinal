@@ -35,17 +35,37 @@ const SELECTED_HOVER_BRIGHTNESS := 1.16
 				_update_feedback(index)
 
 var buttons: Array[Button] = []
+var _background: Panel
 var _medallions: Array[TextureRect] = []
 var _selection_rims: Array[Panel] = []
 var _tweens: Array[Tween] = []
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_build_background()
 	_tweens.resize(SECTIONS.size())
 	for index in SECTIONS.size():
 		_build_button(index)
 	get_viewport().size_changed.connect(_layout)
 	_layout()
+
+func _build_background() -> void:
+	# A quiet brown panel and fine antique-gold edge, matching the reference HUD.
+	# It is decorative: camera input still passes through the gaps between buttons.
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("30281d")
+	style.border_color = Color("9b8151")
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(3)
+	style.corner_detail = 4
+	style.shadow_color = Color(0.025, 0.018, 0.01, 0.4)
+	style.shadow_size = 3
+	style.shadow_offset = Vector2(1, 1)
+	_background = Panel.new()
+	_background.name = "Background"
+	_background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_background.add_theme_stylebox_override("panel", style)
+	add_child(_background)
 
 func _build_button(index: int) -> void:
 	var section := SECTIONS[index]
@@ -110,6 +130,11 @@ func _layout() -> void:
 	# in narrow windows instead of reducing the targets below forty pixels.
 	position = Vector2(34.0 * factor - HIT_SIZE * 0.5, 94.0 * factor)
 	size = Vector2(HIT_SIZE, ROW_PITCH * (buttons.size() - 1) + HIT_SIZE)
+	# Preserve the button positions while keeping the border inside narrow viewports.
+	var horizontal_padding := clampf(position.x - 2.0, 0.0, 8.0)
+	var vertical_padding := 8.0 * factor
+	_background.position = Vector2(-horizontal_padding, -vertical_padding)
+	_background.size = size + Vector2(horizontal_padding * 2.0, vertical_padding * 2.0)
 	var art_size := maxf(36.0, 38.0 * factor)
 	for index in buttons.size():
 		var button := buttons[index]

@@ -210,7 +210,7 @@ func _review_interaction(viewport: SubViewport, header: Control, destination: St
 func _check_menu_layout(menu: Control, dimensions: Vector2i) -> void:
 	var buttons: Array = menu.get("buttons")
 	_check(buttons.size() == MENU_SECTIONS.size(), "Menu must contain exactly seven section buttons.")
-	_check_menu_decorations(menu, buttons)
+	_check_menu_decorations(menu, buttons, false, menu)
 	var bounds := Rect2(Vector2.ZERO, Vector2(dimensions))
 	for index in buttons.size():
 		var button: Button = buttons[index]
@@ -228,17 +228,18 @@ func _check_menu_layout(menu: Control, dimensions: Vector2i) -> void:
 		_check(medallion != null and medallion.texture != null, "Menu button has no medallion image.")
 		print("MENU_REVIEW_BUTTON ", button.get_meta("section", &""), " ", rect)
 
-func _check_menu_decorations(node: Node, buttons: Array, inside_button := false) -> void:
+func _check_menu_decorations(node: Node, buttons: Array, inside_button := false, menu_root: Control = null) -> void:
 	var is_button := node is Button and node in buttons
 	var in_button := inside_button or is_button
+	var is_background := node is Panel and node.name == &"Background" and node.get_parent() == menu_root
 	if node is Control:
 		if not is_button:
 			_check(node.mouse_filter == Control.MOUSE_FILTER_IGNORE, str(node.get_path()) + " blocks menu background input.")
 		_check(not (node is Label and node.visible), "Menu contains a visible label.")
-		if not in_button:
+		if not in_button and not is_background:
 			_check(not (node is Panel or node is PanelContainer or node is ColorRect or node is TextureRect), "Menu contains a sidebar background outside its icon buttons.")
 	for child in node.get_children():
-		_check_menu_decorations(child, buttons, in_button)
+		_check_menu_decorations(child, buttons, in_button, menu_root)
 
 func _review_menu(viewport: SubViewport, menu: Control, destination: String) -> void:
 	var buttons: Array = menu.get("buttons")
