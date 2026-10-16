@@ -6,9 +6,9 @@ their GLBs from the pinned original revision (2f193f8), then changes card placem
 volume normals, vertex occlusion and bark/leaf tints. Trunk positions and normals
 remain exactly as authored; all foliage cards stay in the crown.
 It preserves index buffers and triangle counts. Embedded images and UVs also stay
-unchanged except for maple and stone pine foliage. Their branch-spray atlases are
-assets/trees/textures/maple-boughs.png and stone-pine-boughs.png; each uses four
-matching UV regions.
+unchanged except for maple, stone pine and white willow foliage. Their branch-spray
+atlases are assets/trees/textures/maple-boughs.png, stone-pine-boughs.png and
+white-willow-boughs.png; each uses four matching UV regions.
 Run from the repository root with Python 3 (standard library only):
 
     python tools/art/refine_trees.py
@@ -36,7 +36,15 @@ keep the broadleaf crown full while allowing gaps between branches. Normals use
 40 percent local bough shape and 60 percent crown envelope. The original wood,
 ground patch, index buffers and triangle counts are preserved. Runtime atlas import
 settings match the stone pine. See maple_boughs_prompt.txt for the exact prompt.
-The other six species retain their previous normal recipe and artwork.
+White willow: 66 existing quads carry fine branching sprays with narrow pointed
+leaves and muted silvery undersides. The primary card in each bough points its
+painted tip outward/down through its V flip. The other two cards reflect vertically
+around their own centers so their tips also descend; their centers, dimensions and
+the broad crown remain intact. Slightly larger interior sprays connect the crown,
+while normals use 35 percent local shape and 65 percent crown envelope. Original
+wood, indices and the ground patch remain unchanged. Runtime texture settings match
+maple and stone pine. See white_willow_boughs_prompt.txt for the exact prompt.
+The other five species retain their previous normal recipe and artwork.
 
 Budget, including the runtime two-triangle ground patch:
     Oak          197 + 2 = 199
@@ -91,6 +99,8 @@ Visual review (requires the actual renderer; --headless cannot capture pixels):
     godot --path . --script res://tools/tree_visual_review.gd -- --closeup=maple --output=previews/tree-visual-pass/maple-ground-closeup.png
     godot --path . --script res://tools/tree_visual_review.gd -- --closeup=maple --rotation=60 --output=previews/tree-visual-pass/maple-after-60.png
     godot --path . --script res://tools/tree_visual_review.gd -- --closeup=stone-pine --output=previews/tree-visual-pass/stone-pine-after.png
+    godot --path . --script res://tools/tree_visual_review.gd -- --closeup=white-willow --output=previews/tree-visual-pass/white-willow-after.png
+    godot --path . --script res://tools/tree_visual_review.gd -- --closeup=white-willow --rotation=60 --output=previews/tree-visual-pass/white-willow-after-60.png
     godot --path . --script res://tools/tree_visual_review.gd -- --dense=10000 --frames=240 --output=previews/tree-visual-pass/dense-with-bases.png
     godot --path . --script res://tools/tree_visual_review.gd -- --dense=10000 --frames=240 --no-bases --output=previews/tree-visual-pass/dense-no-bases.png
     godot --path . --script res://tools/tree_visual_review.gd -- --calibrate --output=previews/tree-visual-pass/calibration.png
