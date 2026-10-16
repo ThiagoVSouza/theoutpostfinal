@@ -1,6 +1,7 @@
 class_name StatsOverlay
 extends CanvasLayer
-## Frame stats in the top-right corner: FPS, GPU core clock and GPU render time.
+## Frame stats in the top-right corner: FPS, GPU core clock and GPU render time, and below them
+## whatever rows the scene supplies through extra_rows.
 ##
 ## GPU ms is the engine's own timing of this viewport, averaged over each refresh so the number
 ## is readable rather than flickering frame to frame. The clock comes from nvidia-smi through
@@ -9,7 +10,10 @@ extends CanvasLayer
 ## still reports the discrete one, and that clock would describe a GPU doing none of the work.
 
 const REFRESH_SECONDS := 0.25
+const ROW := "%-10s%12s"
 
+## Returns an Array of [name, value] pairs, drawn under the frame stats. Unset, nothing is drawn.
+var extra_rows: Callable
 var gpu_clock := GpuClock.new()
 var label: Label
 var on_nvidia := false
@@ -51,8 +55,16 @@ func _refresh() -> void:
 	var gpu_ms := gpu_total / samples if samples > 0 else 0.0
 	var megahertz := gpu_clock.megahertz() if on_nvidia else -1
 	var clock := "%d MHz" % megahertz if megahertz > 0 else "n/a"
-	label.text = "%-10s%10d\n%-10s%10s\n%-10s%10s" % ["FPS", Engine.get_frames_per_second(),
-		"GPU clock", clock, "GPU", "%.2f ms" % gpu_ms]
+	var lines: Array[String] = [
+		ROW % ["FPS", str(roundi(Engine.get_frames_per_second()))],
+		ROW % ["GPU clock", clock],
+		ROW % ["GPU", "%.2f ms" % gpu_ms],
+	]
+	if extra_rows.is_valid():
+		lines.append("")
+		for row: Array in extra_rows.call():
+			lines.append(ROW % [row[0], row[1]])
+	label.text = "\n".join(lines)
 	elapsed = 0.0
 	gpu_total = 0.0
 	samples = 0
