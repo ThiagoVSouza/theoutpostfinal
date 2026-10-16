@@ -90,6 +90,13 @@ func _build_surface() -> void:
 	surface_material.set_shader_parameter("land_radius", TEST_LAND_RADIUS)
 	surface_material.set_shader_parameter("land_amplitude", PackedFloat32Array(TEST_LAND_AMPLITUDE))
 	surface_material.set_shader_parameter("land_phase", PackedFloat32Array(TEST_LAND_PHASE))
+	# The sea and grass are held to the colours they had before the scene took the models' viewer
+	# lighting, which needs the tonemap's own settings to undo it (see board.gdshader).
+	var environment := get_world_3d().environment
+	if environment != null and environment.tonemap_mode == Environment.TONE_MAPPER_ACES:
+		surface_material.set_shader_parameter("hold_colours", true)
+		surface_material.set_shader_parameter("tonemap_exposure", environment.tonemap_exposure)
+		surface_material.set_shader_parameter("tonemap_white", environment.tonemap_white)
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(WorldSpec.BOARD_SIZE, WorldSpec.BOARD_SIZE)
 	plane.material = surface_material

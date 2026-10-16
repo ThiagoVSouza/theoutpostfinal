@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3]
+[gd_scene load_steps=24 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/world/board.gd" id="2_board"]
@@ -18,13 +18,26 @@
 [ext_resource type="PackedScene" path="res://assets/trees/spruce.glb" id="16_spruce"]
 [ext_resource type="PackedScene" path="res://assets/trees/cypress.glb" id="17_cypress"]
 [ext_resource type="PackedScene" path="res://assets/trees/white-willow.glb" id="18_white_willow"]
+[ext_resource type="Shader" path="res://shaders/hemisphere_sky.gdshader" id="19_sky"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_sky"]
+shader = ExtResource("19_sky")
+
+[sub_resource type="Sky" id="Sky_hemisphere"]
+sky_material = SubResource("ShaderMaterial_sky")
+radiance_size = 0
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
 background_color = Color(0, 0, 0, 1)
-ambient_light_source = 2
-ambient_light_color = Color(0.72, 0.70, 0.66, 1)
-ambient_light_energy = 0.45
+sky = SubResource("Sky_hemisphere")
+ambient_light_source = 3
+ambient_light_sky_contribution = 1.0
+ambient_light_energy = 0.8276
+reflected_light_source = 1
+tonemap_mode = 3
+tonemap_exposure = 1.25
+tonemap_white = 14.26
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_main")
@@ -33,11 +46,17 @@ script = ExtResource("1_main")
 environment = SubResource("Environment_main")
 
 [node name="Sun" type="DirectionalLight3D" parent="."]
-rotation = Vector3(-0.872665, -0.610865, 0)
-light_energy = 1.1
+rotation = Vector3(-0.8366, 0.588, 0)
+light_color = Color(1, 0.961, 0.875, 1)
+light_energy = 1.0186
 shadow_enabled = true
 directional_shadow_mode = 0
 directional_shadow_fade_start = 1.0
+
+[node name="Rim" type="DirectionalLight3D" parent="."]
+rotation = Vector3(-0.4882, -2.3562, 0)
+light_color = Color(0.753, 0.875, 0.898, 1)
+light_energy = 0.4138
 
 [node name="Board" type="Node3D" parent="."]
 script = ExtResource("2_board")
