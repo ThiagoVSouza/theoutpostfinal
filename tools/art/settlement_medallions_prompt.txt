@@ -1,0 +1,24 @@
+Generated with the built-in image_gen tool. Original output is retained unchanged.
+Texture import: lossless, mipmaps, alpha-border fix, no premultiplied alpha.
+
+Use case: production game UI sprite-atlas, extraction and redesign from reference.
+Convert the seven colored circular menu buttons from the reference screenshot into ONE clean TRANSPARENT PNG SPRITE ATLAS for a Godot game. Keep their hand-painted, softly embossed antique-gold icon / thin gold-rim / earthy colored enamel style, but change the Domain and Finances symbols as specified below. The forest, header, text and gradient must all be completely removed.
+
+CANVAS AND PLACEMENT ARE CRITICAL:
+A wide 2:1 transparent canvas, ideally2048x1024 pixels, organized as exactly FOUR EQUAL COLUMNS and TWO EQUAL ROWS (4x2 grid).
+Each cell is512x512. Draw one identical-size circular medallion centered in each occupied cell, outer diameter360px, leaving76px fully transparent padding on every side. Centers: (256,256), (768,256), (1280,256), (1792,256), (256,768), (768,768), (1280,768). Bottom-right cell MUST REMAIN COMPLETELY EMPTY AND TRANSPARENT.
+No visible grid, no cells, no panel background, no outer shadows outside the circles, no labels, no lettering, no numbers, no decorative props. All pixels outside the seven circles are genuinely transparent alpha, not white, black, or checkerboard. Each circle should be perfectly round and equal-sized, viewed directly from the front. No perspective tilt.
+
+EXACT CELL CONTENTS, READ LEFT TO RIGHT:
+TOP ROW:
+1. DOMAIN — rich muted forest-green field (#31573F). NEW SYMBOL: a bold front-facing fortified estate gate with two square stone towers and a central arched gate, rendered in pale antique gold. Simple crenellated silhouette, clear big doorway. It represents controlled territory. NOT a roundhouse, NOT a hut, NOT a gazebo, NOT a roofed cottage.
+2. POPULATION — warm copper-orange field (#955432). Three human head-and-shoulder silhouettes, one central figure and two smaller flanking figures, pale antique gold.
+3. FINANCES — ochre-gold field (#866124). NEW SYMBOL: upright BALANCE SCALES, with a central vertical stand, horizontal balanced beam, and TWO large clearly visible hanging pans, one each side, pale ivory gold for contrast. This must unmistakably read as weighing scales. NO COINS, no coin stacks, no money bags.
+4. MILITARY — deep wine-red field (#702B31). Two crossed swords with broad clean blades and distinct guards, pale antique gold.
+BOTTOM ROW:
+5. DIPLOMACY — muted royal/slate blue field (#315D7B). Two clasped hands, simplified readable handshake in pale antique gold.
+6. RELIGION — plum-purple field (#63406B). One sacred oak tree with a broad branching canopy and solid trunk, pale antique gold.
+7. KNOWLEDGE — deep teal field (#286563). One open book with a clear central spine and broad pages, pale ivory gold.
+8. EMPTY TRANSPARENT CELL.
+
+VISUAL QUALITY: a consistent thin antique-gold ring around every button; dark inner seam giving slight depth; matte richly colored field; softly lit embossed gold pictogram. Do not use thick double rings, glossy gems, neon colors, modern flat app icons, or intricate microdetail. These will be displayed at approximately38px, so prioritize bold unmistakable silhouettes. Match the reference's colored medallion direction, not its scenery or menu background. No selected/hover state baked in. No text anywhere.
