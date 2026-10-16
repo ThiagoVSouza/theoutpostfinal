@@ -1,4 +1,4 @@
-[gd_scene load_steps=27 format=3]
+[gd_scene load_steps=28 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/world/board.gd" id="2_board"]
@@ -22,6 +22,7 @@
 [ext_resource type="Shader" path="res://shaders/hemisphere_sky.gdshader" id="19_sky"]
 [ext_resource type="PackedScene" path="res://scenes/settlement_header.tscn" id="21_header"]
 [ext_resource type="PackedScene" path="res://scenes/settlement_menu.tscn" id="22_menu"]
+[ext_resource type="PackedScene" path="res://scenes/settlement_resources.tscn" id="23_resources"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_sky"]
 shader = ExtResource("19_sky")
@@ -86,3 +87,5 @@ layer = 10
 [node name="SettlementHeader" parent="GameUI" instance=ExtResource("21_header")]
 
 [node name="SettlementMenu" parent="GameUI" instance=ExtResource("22_menu")]
+
+[node name="SettlementResources" parent="GameUI" instance=ExtResource("23_resources")]
