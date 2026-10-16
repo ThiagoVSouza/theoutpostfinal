@@ -38,19 +38,19 @@ func _ready() -> void:
 
 func _layout() -> void:
 	var factor := clampf(get_viewport_rect().size.x / 800.0, 0.65, 1.0)
-	size = Vector2(420, 112) * factor
+	size = Vector2(300, 82) * factor
 	# The supplied strip fades at both ends. Start its faded left end offscreen, so actual
 	# fabric and both gold rules reach x=0 behind the shield instead of leaving an empty gap.
-	banner.position = Vector2(-70, 4) * factor
-	banner.size = Vector2(490, 490.0 * 305.0 / 2004.0) * factor
-	shield.position = Vector2(27, 0) * factor
-	shield.size = Vector2(76, 76.0 * 840.0 / 609.0) * factor
-	name_label.position = Vector2(124, 8) * factor
-	name_label.size = Vector2(242, 35) * factor
-	name_label.add_theme_font_size_override("font_size", roundi(25 * factor))
-	rank_label.position = Vector2(124, 40) * factor
-	rank_label.size = Vector2(242, 29) * factor
-	rank_label.add_theme_font_size_override("font_size", roundi(19 * factor))
+	banner.position = Vector2(-74, 3) * factor
+	banner.size = Vector2(374, 374.0 * 305.0 / 2004.0) * factor
+	shield.position = Vector2(6, 0) * factor
+	shield.size = Vector2(56, 56.0 * 840.0 / 609.0) * factor
+	name_label.position = Vector2(78, 3) * factor
+	name_label.size = Vector2(174, 30) * factor
+	name_label.add_theme_font_size_override("font_size", roundi(20 * factor))
+	rank_label.position = Vector2(78, 29) * factor
+	rank_label.size = Vector2(174, 24) * factor
+	rank_label.add_theme_font_size_override("font_size", roundi(15 * factor))
 
 func _texture(node_name: String, source: Texture2D, region: Rect2) -> TextureRect:
 	var atlas := AtlasTexture.new()
