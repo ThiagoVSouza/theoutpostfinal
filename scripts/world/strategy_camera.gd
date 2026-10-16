@@ -12,8 +12,8 @@ extends Camera3D
 
 ## About 40 m of view, the closest TheOutpostMap2's settlement view goes.
 const MIN_ZOOM := 40.0
-## The whole board and its frame fill the screen's height at HOME_ZOOM: 104 km of board and frame,
-## foreshortened by sin(pitch) to about 80 km, plus a margin.
+## The whole board and its frame fill the screen's height at HOME_ZOOM: 102 km of board and frame,
+## foreshortened by sin(pitch) to about 78 km, plus a margin.
 const MAX_ZOOM := 110000.0
 const HOME_ZOOM := 88000.0
 const HOME_PITCH := deg_to_rad(50.0)

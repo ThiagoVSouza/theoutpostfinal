@@ -78,11 +78,18 @@ void fragment() {
 	float tone = clamp(figure * 0.9 + grain * 0.35 + fibre * 0.12 - 0.15, 0.0, 1.0);
 	vec3 color = mix(dark_wood, light_wood, tone);
 
-	// The mitre: a thin dark joint on the corner diagonals, at least a pixel wide at any zoom.
+	// The mitre: a hairline joint on the corner diagonals, a fixed physical width. Its strength
+	// is the share of a pixel it covers, so close in it is a crisp line and from afar it fades
+	// out, leaving the change of grain direction to show the corner. Holding it at a minimum
+	// pixel width instead turned it into a heavy black slash at whole-board zoom.
 	if (min(abs(p.x), abs(p.z)) > half_board) {
 		float off_diagonal = abs(abs(p.x) - abs(p.z));
-		float joint = max(6.0, fwidth(off_diagonal) * 1.2);
-		color = mix(color, seam_color, 1.0 - smoothstep(joint * 0.5, joint, off_diagonal));
+		float pixel = max(fwidth(off_diagonal), 0.0001);
+		float joint = frame_width * 0.003;
+		float coverage = clamp(joint / pixel, 0.0, 1.0);
+		float reach = max(joint, pixel);
+		float line = (1.0 - smoothstep(reach * 0.5, reach, off_diagonal)) * coverage;
+		color = mix(color, seam_color, line * 0.75);
 	}
 
 	ALBEDO = color;

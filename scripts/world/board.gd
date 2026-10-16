@@ -29,7 +29,6 @@ func _build_surface() -> void:
 	surface_material = ShaderMaterial.new()
 	surface_material.shader = board_shader
 	surface_material.set_shader_parameter("grid_enabled", grid_visible)
-	surface_material.set_shader_parameter("region_size", WorldSpec.REGION)
 	surface_material.set_shader_parameter("tile_size", WorldSpec.TILE)
 	surface_material.set_shader_parameter("subtile_size", WorldSpec.SUBTILE)
 	var plane := PlaneMesh.new()

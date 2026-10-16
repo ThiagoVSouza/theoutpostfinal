@@ -1,4 +1,4 @@
-// The board's surface: black for now, with the region, tile and subtile grid over it.
+// The board's surface: black for now, with the tile and subtile grid over it.
 //
 // The grid functions come from TheOutpostMap's map_grid.gdshaderinc. They are written out here
 // rather than included: in Godot 4.7.1 a shader include read on the loading screen's loader thread
@@ -10,7 +10,6 @@ render_mode unshaded, cull_back;
 uniform vec3 surface_color : source_color = vec3(0.0);
 uniform vec3 grid_color : source_color = vec3(0.62, 0.60, 0.54);
 uniform bool grid_enabled = true;
-uniform float region_size = 10000.0;
 uniform float tile_size = 100.0;
 uniform float subtile_size = 10.0;
 
@@ -22,7 +21,7 @@ varying vec3 world_position;
 // Each tier fades on its own cell size in pixels: fully drawn above sixteen pixels a cell, gone
 // below five. TheOutpostMap fades between three and nine, but on a black board a tier at nine
 // pixels a cell reads as a grey mesh rather than as lines. Zooming out hands the board from
-// subtiles to tiles to regions without a switch.
+// subtiles to tiles, and then to no grid at all once tiles are too small to read.
 float grid_line(vec2 p, float spacing, float footprint) {
 	float cell_pixels = spacing / max(footprint, 0.0001);
 	float legible = smoothstep(5.0, 16.0, cell_pixels);
@@ -34,11 +33,10 @@ float grid_line(vec2 p, float spacing, float footprint) {
 	return legible * (1.0 - smoothstep(footprint * 0.18, footprint * 0.75, distance_m));
 }
 
-// Region is the strongest because it is the coarsest structure and the only one still legible
-// with the whole board in view, where 100 m tiles have long since faded below a pixel.
+// Tiles are drawn stronger than subtiles so the 100 m cells still read inside the 10 m ones.
+// TheOutpostMap also had a 10 km region tier for whole-map zoom; the board does not need one.
 float map_grid(vec2 p, float footprint) {
-	float grid = grid_line(p, region_size, footprint);
-	grid = max(grid, grid_line(p, tile_size, footprint) * 0.7);
+	float grid = grid_line(p, tile_size, footprint) * 0.7;
 	grid = max(grid, grid_line(p, subtile_size, footprint) * 0.4);
 	return grid;
 }
