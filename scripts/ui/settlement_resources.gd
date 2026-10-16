@@ -9,8 +9,11 @@ const RESOURCES: Array[StringName] = [&"gold", &"population", &"score"]
 const ICON_REGIONS: Array[Rect2] = [
 	Rect2(56, 112, 616, 512), Rect2(740, 112, 692, 512), Rect2(1484, 112, 656, 512),
 ]
-const STRIP_SIZE := Vector2(384, 56)
-const MINIMUM_WIDTH := 264.0
+const STRIP_SIZE := Vector2(252, 44)
+const MINIMUM_WIDTH := 196.0
+const TOTAL_FONT_SIZE := 14
+const MINIMUM_TOTAL_FONT_SIZE := 12
+const INCREMENT_FONT_SIZE := 10
 const HUD_GAP := 8.0
 const POSITIVE_COLOUR := Color("c8cfaa")
 const ZERO_COLOUR := Color("c9b58d")
@@ -145,22 +148,22 @@ func _refresh_resource(index: int) -> void:
 	var increments: Array[int] = [gold_yearly_increment, population_yearly_increment, score_yearly_increment]
 	var total_label := total_labels[index]
 	var full_total := _group_digits(totals[index])
-	var preferred_font_size := roundi(20.0 * clampf(size.x / STRIP_SIZE.x, 0.85, 1.0))
+	var preferred_font_size := roundi(TOTAL_FONT_SIZE * clampf(size.x / STRIP_SIZE.x, 0.9, 1.0))
 	var font_size := preferred_font_size
-	while font_size > 13 and TOTAL_FONT.get_string_size(full_total, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > total_label.size.x:
+	while font_size > MINIMUM_TOTAL_FONT_SIZE and TOTAL_FONT.get_string_size(full_total, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > total_label.size.x:
 		font_size -= 1
 	var display_total := _display_number(totals[index], TOTAL_FONT, font_size, total_label.size.x)
 	if display_total != full_total:
 		# Once abbreviated, restore the larger total size wherever it fits.
 		font_size = preferred_font_size
 		display_total = _display_number(totals[index], TOTAL_FONT, font_size, total_label.size.x)
-		while font_size > 13 and TOTAL_FONT.get_string_size(display_total, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > total_label.size.x:
+		while font_size > MINIMUM_TOTAL_FONT_SIZE and TOTAL_FONT.get_string_size(display_total, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > total_label.size.x:
 			font_size -= 1
 			display_total = _display_number(totals[index], TOTAL_FONT, font_size, total_label.size.x)
 	total_label.add_theme_font_size_override("font_size", font_size)
 	total_label.text = display_total
 	var increment := increments[index]
-	increment_labels[index].text = _display_number(increment, FONT, 12, increment_labels[index].size.x, true)
+	increment_labels[index].text = _display_number(increment, FONT, INCREMENT_FONT_SIZE, increment_labels[index].size.x, true)
 	var colour := POSITIVE_COLOUR if increment > 0 else ZERO_COLOUR
 	if increment < 0: colour = NEGATIVE_COLOUR
 	increment_labels[index].add_theme_color_override("font_color", colour)
@@ -223,39 +226,44 @@ func _layout() -> void:
 	for control in _reserved_controls:
 		if is_instance_valid(control) and control.is_visible_in_tree():
 			reserved.append(control.get_global_rect().grow(HUD_GAP))
-	var target := Rect2(Vector2((viewport_size.x - STRIP_SIZE.x) * 0.5, 3), STRIP_SIZE)
+	var preferred_size := STRIP_SIZE
+	var header := get_node_or_null("../SettlementHeader") as Control
+	if header != null:
+		# Keep this secondary readout narrower than the settlement identity at every size.
+		preferred_size.x = minf(preferred_size.x, header.size.x * 0.9)
+	var target := Rect2(Vector2((viewport_size.x - preferred_size.x) * 0.5, 3), preferred_size)
 	var needs_fallback := target.position.x < HUD_GAP
 	for rect in reserved:
 		if target.intersects(rect): needs_fallback = true
 	if needs_fallback:
-		target = _find_free_band(viewport_size, reserved)
+		target = _find_free_band(viewport_size, reserved, preferred_size)
 	position = target.position
 	size = target.size
 	panel.position = Vector2.ZERO
 	panel.size = size
 	var cell_width := size.x / RESOURCES.size()
 	var factor := clampf(size.x / STRIP_SIZE.x, 0.8, 1.0)
-	var icon_size := roundf(32.0 * factor)
-	var padding := roundf(12.0 * factor)
+	var icon_size := roundf(22.0 * factor)
+	var padding := roundf(7.0 * factor)
 	for index in cells.size():
 		cells[index].position = Vector2(cell_width * index, 0)
 		cells[index].size = Vector2(cell_width, size.y)
 		icons[index].position = Vector2(padding, (size.y - icon_size) * 0.5)
 		icons[index].size = Vector2.ONE * icon_size
-		var text_x := padding + icon_size + roundf(8.0 * factor)
+		var text_x := padding + icon_size + roundf(5.0 * factor)
 		var text_width := maxf(1.0, cell_width - text_x - padding)
 		total_labels[index].position = Vector2(text_x, 2)
-		# Spectral at 20 px has a 32 px native line height in Godot.
-		total_labels[index].size = Vector2(text_width, 32)
-		increment_labels[index].position = Vector2(text_x, 34)
-		increment_labels[index].add_theme_font_size_override("font_size", 12)
-		increment_labels[index].size = Vector2(text_width, 19)
+		# Leave room for Spectral's native line height at the smaller type sizes.
+		total_labels[index].size = Vector2(text_width, 23)
+		increment_labels[index].position = Vector2(text_x, 25)
+		increment_labels[index].add_theme_font_size_override("font_size", INCREMENT_FONT_SIZE)
+		increment_labels[index].size = Vector2(text_width, 16)
 		_refresh_resource(index)
 	for index in _dividers.size():
-		_dividers[index].position = Vector2(roundf(cell_width * (index + 1)), 10)
-		_dividers[index].size = Vector2(1, size.y - 20)
+		_dividers[index].position = Vector2(roundf(cell_width * (index + 1)), 8)
+		_dividers[index].size = Vector2(1, size.y - 16)
 
-func _find_free_band(viewport_size: Vector2, reserved: Array[Rect2]) -> Rect2:
+func _find_free_band(viewport_size: Vector2, reserved: Array[Rect2], preferred_size: Vector2) -> Rect2:
 	# Keep the usual top-centre placement whenever it fits. Narrow windows use the
 	# first free band below nearby HUD controls, including the changing stats panel.
 	var bands: Array[float] = [3.0]
@@ -263,12 +271,12 @@ func _find_free_band(viewport_size: Vector2, reserved: Array[Rect2]) -> Rect2:
 		bands.append(rect.end.y)
 	bands.sort()
 	var available_width := maxf(1.0, viewport_size.x - HUD_GAP * 2.0)
-	var minimum_width := minf(MINIMUM_WIDTH, available_width)
+	var minimum_width := minf(MINIMUM_WIDTH, minf(preferred_size.x, available_width))
 	for top in bands:
-		if top + STRIP_SIZE.y > viewport_size.y: continue
+		if top + preferred_size.y > viewport_size.y: continue
 		var intervals: Array[Vector2] = [Vector2(HUD_GAP, viewport_size.x - HUD_GAP)]
 		for rect in reserved:
-			if rect.end.y <= top or rect.position.y >= top + STRIP_SIZE.y: continue
+			if rect.end.y <= top or rect.position.y >= top + preferred_size.y: continue
 			var remaining: Array[Vector2] = []
 			for interval in intervals:
 				if rect.end.x <= interval.x or rect.position.x >= interval.y:
@@ -281,13 +289,13 @@ func _find_free_band(viewport_size: Vector2, reserved: Array[Rect2]) -> Rect2:
 		var best_distance := INF
 		for interval in intervals:
 			if interval.y - interval.x < minimum_width: continue
-			var width := minf(STRIP_SIZE.x, interval.y - interval.x)
+			var width := minf(preferred_size.x, interval.y - interval.x)
 			var left := clampf((viewport_size.x - width) * 0.5, interval.x, interval.y - width)
 			var distance := absf(left + width * 0.5 - viewport_size.x * 0.5)
 			if distance < best_distance:
-				best = Rect2(left, top, width, STRIP_SIZE.y)
+				best = Rect2(left, top, width, preferred_size.y)
 				best_distance = distance
 		if best_distance < INF: return best
 	# Extremely small viewports may have no clear band; retain an in-bounds strip.
-	var width := minf(STRIP_SIZE.x, available_width)
-	return Rect2((viewport_size.x - width) * 0.5, maxf(0.0, viewport_size.y - STRIP_SIZE.y), width, STRIP_SIZE.y)
+	var width := minf(preferred_size.x, available_width)
+	return Rect2((viewport_size.x - width) * 0.5, maxf(0.0, viewport_size.y - preferred_size.y), width, preferred_size.y)
