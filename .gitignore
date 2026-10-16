@@ -1,0 +1,17 @@
+# Godot
+.godot/
+*.translation
+export_presets.cfg
+/android/
+/build/
+
+# Run output
+*.log
+/previews/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
