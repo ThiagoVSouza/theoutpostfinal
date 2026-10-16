@@ -10,9 +10,10 @@ extends Node3D
 ## Every tree of one species in one 500 m chunk is a single MultiMesh, so a chunk off screen is
 ## culled whole and the whole forest is a few hundred draw calls at most.
 ##
-## From the Overview level of detail out, a tree is well under a pixel and the meshes are hidden.
-## The forest is painted into the grass instead, from a canopy map this builds from the same tree
-## positions: each crown's footprint, coloured by its species' average foliage colour.
+## From the Distant level of detail out the meshes are hidden and the forest is painted into the
+## grass instead, from a canopy map this builds from the same tree positions: each crown's
+## footprint, coloured by its species' average foliage colour. Distant starts where a 100 m tile
+## covers 48 pixels, so a crown is 2 to 5 pixels across there.
 
 ## What T steps through.
 const COUNTS: Array[int] = [0, 1000, 10000, 50000]
@@ -30,8 +31,8 @@ const SCALE_MIN := 0.85
 const SCALE_MAX := 1.2
 const SEED := 20261016
 ## Texels across the canopy map. It covers just the forest, so its texels shrink with it: about
-## 4 m for 50,000 trees, which is still finer than a pixel at the Overview level.
-const PAINT_TEXELS := 512
+## 1.8 m for 50,000 trees, near a pixel's width where the Distant level begins (about 1.4 m).
+const PAINT_TEXELS := 1024
 ## Crowns shade their own insides, so seen from above a forest is darker than its leaves' colour.
 const CANOPY_SHADE := 0.8
 
