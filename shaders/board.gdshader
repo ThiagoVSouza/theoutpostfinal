@@ -10,23 +10,21 @@
 // average instead, which is what the eye sees of it from far away anyway, and that colour carries
 // on to the top level.
 //
-// Unlit. The sea is flat and the camera orthographic, so the Sun gave it one constant brightness
-// across the whole board, and measured from captures that brightness was within 2% of the albedo
-// itself: lighting cost half the surface's GPU time and changed nothing on screen. What it gives up
-// is shadows: once something stands on the water and casts one, the sea will need lighting back,
-// or a shadow term of its own.
+// Lit, as in Map2, so the sea takes shadows, follows any change in the Sun and reflects lights.
+// While the board is empty it changes nothing on screen: the sea is flat and the camera
+// orthographic, so the Sun gives it one constant brightness, measured within 2% of the albedo. It
+// costs about 0.25 ms a frame with the sea filling a 2560 x 1080 screen; unshaded halves that.
 //
 // The grid functions come from TheOutpostMap's map_grid.gdshaderinc. They are written out here
 // rather than included: in Godot 4.7.1 a shader include read on the loading screen's loader thread
 // leaves a loader object behind, reported as a leaked instance at exit. Once a second surface needs
 // the grid it should become a shared include again, with that leak dealt with first.
 shader_type spatial;
-render_mode unshaded, cull_back;
+render_mode diffuse_burley, cull_back;
 
 // R is the chop's glitter and G the broad swell bands it clusters along, both lit from the south
 // east and baked by Map2's tools/build_water_sheen.gd. The sea's apparent light direction lives in
-// this texture rather than in the scene's Sun; see Map2's docs/sun-and-sheen.md. That is why the
-// sea can be unlit and still read as lit.
+// this texture rather than in the scene's Sun; see Map2's docs/sun-and-sheen.md.
 uniform sampler2D sheen_map : filter_linear_mipmap_anisotropic, repeat_enable;
 uniform vec4 sheen_tint : source_color = vec4(0.76, 0.87, 0.85, 1.0);
 uniform float sheen_strength = 0.22;
@@ -99,6 +97,7 @@ void fragment() {
 		float band = texture(sheen_map, band_uv).g;
 		sheen = mix(sheen_mean, glitter * (0.55 + 0.8 * band), sheen_fade);
 	}
+	// Added to the albedo rather than the emission, so shadows can still put the sparkle out.
 	vec3 color = deep_color.rgb + sheen_tint.rgb * sheen * sheen_strength;
 	if (grid_enabled && grid_fade > 0.0) {
 		// Metres per pixel along the worse screen axis; under a tilted camera the two differ.
@@ -106,4 +105,11 @@ void fragment() {
 		color = mix(color, grid_color, map_grid(p, footprint) * grid_fade);
 	}
 	ALBEDO = color;
+	// Shaded flat. The sea's directional read comes from the sheen tile, not from the Sun; a real
+	// wave normal would track the Sun and undo that.
+	NORMAL = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
+	// A flat plane under a directional light returns one constant specular value across the whole
+	// sea, which reads as plastic, so it is kept broad and dim.
+	ROUGHNESS = 0.42;
+	SPECULAR = 0.22;
 }
