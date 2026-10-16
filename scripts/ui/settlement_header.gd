@@ -7,6 +7,7 @@ const BANNER := preload("res://assets/ui/settlement/banner.png")
 const SHIELD := preload("res://assets/ui/settlement/shield.png")
 const FONT := preload("res://assets/ui/fonts/Spectral-Regular.ttf")
 const TITLE_FONT := preload("res://assets/ui/fonts/Spectral-Bold.ttf")
+const BANNER_TINT := preload("res://shaders/banner_tint.gdshader")
 const SHIELD_TINT := preload("res://shaders/shield_tint.gdshader")
 
 @export var settlement_name := "Black Raven":
@@ -27,12 +28,15 @@ var rank_label: Label
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	banner = _texture("Banner", BANNER, Rect2(51, 219, 2004, 305))
+	var banner_tint := ShaderMaterial.new()
+	banner_tint.shader = BANNER_TINT
+	banner.material = banner_tint
 	shield = _texture("Shield", SHIELD, Rect2(447, 91, 609, 840))
 	var tint := ShaderMaterial.new()
 	tint.shader = SHIELD_TINT
 	shield.material = tint
-	name_label = _label("SettlementName", settlement_name, TITLE_FONT, Color("e3d5ae"))
-	rank_label = _label("SettlementRank", settlement_rank, FONT, Color("c8bc99"))
+	name_label = _label("SettlementName", settlement_name, TITLE_FONT, Color("efd8af"))
+	rank_label = _label("SettlementRank", settlement_rank, FONT, Color("c9b58d"))
 	get_viewport().size_changed.connect(_layout)
 	_layout()
 

@@ -3,7 +3,7 @@ render_mode unshaded;
 
 // Colour only the neutral white field of the supplied shield, preserving its gold edging,
 // antialiasing and original alpha. A later heraldic emblem can sit above this blank field.
-uniform vec4 field_colour : source_color = vec4(0.16, 0.22, 0.16, 1.0);
+uniform vec4 field_colour : source_color = vec4(0.2941, 0.1255, 0.1255, 1.0);
 varying vec4 vertex_colour;
 
 void vertex() {
