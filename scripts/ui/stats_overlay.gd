@@ -10,7 +10,7 @@ extends CanvasLayer
 ## still reports the discrete one, and that clock would describe a GPU doing none of the work.
 
 const REFRESH_SECONDS := 0.25
-const ROW := "%-10s%12s"
+const ROW := "%-10s%16s"
 
 ## Returns an Array of [name, value] pairs, drawn under the frame stats. Unset, nothing is drawn.
 var extra_rows: Callable

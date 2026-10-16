@@ -6,9 +6,11 @@ extends Camera3D
 ## the cursor, middle-drag or Q / E rotate, and R returns to the whole-board view.
 ##
 ## Zoom is the orthographic size: metres of board covered by the screen's height. The camera sits
-## a distance from its focus that grows with the zoom, just far enough that the bottom of a tilted
-## orthographic view never reaches below the board. Keeping it no farther than that keeps the
-## world-space positions small at close zoom, where float precision would otherwise show as jitter.
+## a distance from its focus that grows with the zoom, just far enough that the near plane's lower
+## edge stays above the tallest thing on the board, the frame. Keeping it no farther than that keeps
+## world-space positions small at close zoom, where float precision would show as jitter, and keeps
+## the depth range tight: the sun's shadow map is stretched over that whole range (see main.gd), so
+## every metre of empty air in front of the ground is shadow resolution thrown away.
 
 ## About 40 m of view, the closest TheOutpostMap2's settlement view goes.
 const MIN_ZOOM := 40.0
@@ -93,11 +95,14 @@ func _apply() -> void:
 	focus.x = clampf(focus.x, -PAN_LIMIT, PAN_LIMIT)
 	focus.z = clampf(focus.z, -PAN_LIMIT, PAN_LIMIT)
 	focus.y = 0.0
-	# The view's lower edge sits zoom / 2 * cos(pitch) below the camera; the frame top must clear it.
-	var distance := zoom + WorldSpec.FRAME_HEIGHT * 4.0
+	# The near plane's lower edge sits zoom / 2 * cos(pitch) below the camera, which is
+	# distance * sin(pitch) up; that edge has to stay above the frame's top, with some room.
+	var clearance := WorldSpec.FRAME_HEIGHT * 1.25
+	var distance := (clearance + zoom * 0.5 * cos(pitch)) / sin(pitch)
 	position = focus + Vector3(sin(yaw) * cos(pitch), sin(pitch), cos(yaw) * cos(pitch)) * distance
 	size = zoom
 	look_at(focus)
-	# Depth just deep enough for the ground at the top of the screen, plus the frame below it.
+	# Deep enough for the ground at the top edge of the screen, zoom / 2 / tan(pitch) past the
+	# focus, and for the frame's outer wall reaching below the board there.
 	near = 1.0
-	far = distance + zoom / tan(pitch) + WorldSpec.FRAME_DEPTH * 4.0
+	far = distance + zoom * 0.5 / tan(pitch) + WorldSpec.FRAME_DEPTH / sin(pitch) + 10.0
