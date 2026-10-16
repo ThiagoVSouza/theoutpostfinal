@@ -2,29 +2,28 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://43yc54jhkw88"
-path.bptc="res://.godot/imported/oak_oak-direct-bough-1024.png-3737f15891205883e6001597689566fa.bptc.ctex"
+uid="uid://jf3s2lyexs5x"
+path="res://.godot/imported/oak-boughs.png-8a43de72a58f764464980c16f021c1d6.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/trees/oak_oak-direct-bough-1024.png"
-dest_files=["res://.godot/imported/oak_oak-direct-bough-1024.png-3737f15891205883e6001597689566fa.bptc.ctex"]
+source_file="res://assets/trees/textures/oak-boughs.png"
+dest_files=["res://.godot/imported/oak-boughs.png-8a43de72a58f764464980c16f021c1d6.ctex"]
 
 [params]
 
-compress/mode=2
-compress/high_quality=true
+compress/mode=0
+compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

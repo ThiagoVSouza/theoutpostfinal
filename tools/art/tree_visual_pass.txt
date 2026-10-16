@@ -6,10 +6,11 @@ their GLBs from the pinned original revision (2f193f8), then changes card placem
 volume normals, vertex occlusion and bark/leaf tints. Trunk positions and normals
 remain exactly as authored; all foliage cards stay in the crown.
 It preserves index buffers and triangle counts. Embedded images and UVs also stay
-unchanged except for maple, birch, stone pine and white willow foliage. Pine replaces
-only its foliage image with the original v1 texture, preserving its UVs. The four
-branch-spray atlases are assets/trees/textures/maple-boughs.png, birch-boughs.png,
-stone-pine-boughs.png and white-willow-boughs.png; each uses four matching UV regions.
+unchanged except for oak, maple, birch, stone pine and white willow foliage. Pine
+replaces only its foliage image with the original v1 texture, preserving its UVs.
+The five branch-spray atlases are assets/trees/textures/oak-boughs.png,
+maple-boughs.png, birch-boughs.png, stone-pine-boughs.png and white-willow-boughs.png;
+each uses four matching UV regions.
 Run from the repository root with Python 3 (standard library only):
 
     python tools/art/refine_trees.py
@@ -19,6 +20,22 @@ The generated GLBs are committed assets; Python is not needed to run the game.
 To regenerate just one species:
 
     python tools/art/refine_trees.py --species stone-pine
+
+Oak: 66 existing foliage quads use four broad branching sprays with rounded-lobed
+leaves. The earlier single branch repeated very fine leaf detail across the crown,
+reading as stippled clumps at gameplay distance. Larger connected leaf groups and
+distinct transparent branch channels improve that readability. Oak shares birch's
+source card orientation: keep V on primary plates and flip V on both side plates.
+The side sprays retain their vertical positions, so their outward tips descend
+naturally around the broad spreading crown. An inward radial stretch connects
+middle-crown boughs: each group's outer radial edge stays fixed, while the interior
+extends inward by up to 40 percent of its radial span. This fades out toward outer
+and upper groups, preserving overall bounds, height and the peripheral silhouette.
+Wood, indices and the ground patch remain unchanged. Normals use the resulting
+positions and blend 40 percent local shape with 60 percent crown
+envelope to reduce separately rounded clump shading. Runtime texture settings use
+high-quality VRAM compression, mipmaps and alpha-border repair.
+See oak_boughs_prompt.txt for the exact generation and layout-refinement prompts.
 
 Stone pine: the earlier whole-clump atlas repeated three dense, rounded pads at
 each bough. The replacement has asymmetric needle-bearing sprays and transparent
@@ -78,7 +95,7 @@ Extracted image SHA-256:
     0e187133ab236e1e27a2109c88a2391bcad5bcff3ecd389ed6c5655648efddd5
 The extracted runtime image uses high-quality VRAM
 compression, mipmaps and alpha-border repair like the other foliage atlases.
-The other three species retain their previous normal recipe and artwork.
+The other two species retain their previous normal recipe and artwork.
 
 Budget, including the runtime two-triangle ground patch:
     Oak          197 + 2 = 199
@@ -139,6 +156,8 @@ Visual review (requires the actual renderer; --headless cannot capture pixels):
     godot --path . --script res://tools/tree_visual_review.gd -- --closeup=birch --rotation=60 --output=previews/tree-visual-pass/birch-after-60.png
     godot --path . --script res://tools/tree_visual_review.gd -- --closeup=pine --output=previews/tree-visual-pass/pine-after.png
     godot --path . --script res://tools/tree_visual_review.gd -- --closeup=pine --rotation=60 --output=previews/tree-visual-pass/pine-after-60.png
+    godot --path . --script res://tools/tree_visual_review.gd -- --closeup=oak --output=previews/tree-visual-pass/oak-after.png
+    godot --path . --script res://tools/tree_visual_review.gd -- --closeup=oak --rotation=60 --output=previews/tree-visual-pass/oak-after-60.png
     godot --path . --script res://tools/tree_visual_review.gd -- --dense=10000 --frames=240 --output=previews/tree-visual-pass/dense-with-bases.png
     godot --path . --script res://tools/tree_visual_review.gd -- --dense=10000 --frames=240 --no-bases --output=previews/tree-visual-pass/dense-no-bases.png
     godot --path . --script res://tools/tree_visual_review.gd -- --calibrate --output=previews/tree-visual-pass/calibration.png
