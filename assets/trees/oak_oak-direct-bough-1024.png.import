@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b2ixj6a3bkyqr"
-path.bptc="res://.godot/imported/cypress_cypress-dense-branch-1024.png-96d33e9d6a66a77e2b60801a5bb109cf.bptc.ctex"
+uid="uid://43yc54jhkw88"
+path.bptc="res://.godot/imported/oak_oak-direct-bough-1024.png-3737f15891205883e6001597689566fa.bptc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/trees/cypress_cypress-dense-branch-1024.png"
-dest_files=["res://.godot/imported/cypress_cypress-dense-branch-1024.png-96d33e9d6a66a77e2b60801a5bb109cf.bptc.ctex"]
+source_file="res://assets/trees/oak_oak-direct-bough-1024.png"
+dest_files=["res://.godot/imported/oak_oak-direct-bough-1024.png-3737f15891205883e6001597689566fa.bptc.ctex"]
 
 [params]
 

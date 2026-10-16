@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b16up5yjn4j60"
-path.bptc="res://.godot/imported/oak_oak-dense-bough-1024.png-3c59ddd0f0a45e90e1f0c0ccf3ed2845.bptc.ctex"
+uid="uid://dgjmuha081ndv"
+path.bptc="res://.godot/imported/spruce_spruce-direct-branch-1024.png-82847e327da7b361cfbf411bfd57a335.bptc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/trees/oak_oak-dense-bough-1024.png"
-dest_files=["res://.godot/imported/oak_oak-dense-bough-1024.png-3c59ddd0f0a45e90e1f0c0ccf3ed2845.bptc.ctex"]
+source_file="res://assets/trees/spruce_spruce-direct-branch-1024.png"
+dest_files=["res://.godot/imported/spruce_spruce-direct-branch-1024.png-82847e327da7b361cfbf411bfd57a335.bptc.ctex"]
 
 [params]
 

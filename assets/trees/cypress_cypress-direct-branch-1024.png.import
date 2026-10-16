@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://0l56x5o6up8f"
-path.bptc="res://.godot/imported/spruce_spruce-dense-branch-1024.png-0ef2e7358df06fb5d5034f9837e474b2.bptc.ctex"
+uid="uid://6qjvswhgkvx6"
+path.bptc="res://.godot/imported/cypress_cypress-direct-branch-1024.png-0ff12e13c1b70a2ed499d25925f5d1da.bptc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/trees/spruce_spruce-dense-branch-1024.png"
-dest_files=["res://.godot/imported/spruce_spruce-dense-branch-1024.png-0ef2e7358df06fb5d5034f9837e474b2.bptc.ctex"]
+source_file="res://assets/trees/cypress_cypress-direct-branch-1024.png"
+dest_files=["res://.godot/imported/cypress_cypress-direct-branch-1024.png-0ff12e13c1b70a2ed499d25925f5d1da.bptc.ctex"]
 
 [params]
 
