@@ -3,8 +3,8 @@
     python tools/art/refine_trees.py
 
 The source revision is deliberately pinned: running this twice must not keep shrinking
-the cards. Index buffers and triangle counts are preserved. Maple, birch, stone pine
-and white willow use branch-spray atlases; pine restores its v1 needle texture.
+the cards. Index buffers and triangle counts are preserved. Oak, maple, birch, stone
+pine and white willow use branch-spray atlases; pine restores its v1 needle texture.
 Other embedded textures and all remaining UVs stay unchanged.
 The runtime adds a two-triangle ground patch, included in the 200-triangle ceiling.
 """
@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SOURCE = "2f193f8"
 SPECIES = {
     # foliage tint (linear glTF factor), bark tint, card scale, crown lift
-    "oak": ((.44, .63, .60), (.76, .71, .62), .84, .34),
+    "oak": ((.56, .70, .70), (.76, .71, .62), .84, .34),
     "maple": ((.86, .94, .86), (.76, .71, .62), .88, .20),
     "birch": ((.76, .84, .76), (.70, .72, .69), .93, .05),
     "pine": ((.78, .90, .78), (.72, .77, .69), 1.06, .0),
@@ -159,6 +159,18 @@ def birch_rising_cards(points):
     return result
 
 
+def oak_inner_overlap(points):
+    """Reach inward from each bough's fixed outer edge to connect the middle crown."""
+    centre = mean(points)
+    radius = math.hypot(centre[0], centre[2])
+    radial = unit((centre[0], 0.0, centre[2]))
+    weight = clamp((3.4 - radius) / 1.1) * clamp((6.15 - centre[1]) / .9)
+    projections = [sum(a * b for a, b in zip(sub(p, centre), radial)) for p in points]
+    outer = max(projections)
+    return [add(p, mul(radial, .40 * weight * (d - outer)))
+            for p, d in zip(points, projections)]
+
+
 def pine_bough_groups(positions):
     """Join the pine's paired folded strips before transforming whole boughs."""
     assert len(positions) % 6 == 0
@@ -268,16 +280,19 @@ def foliage(name, positions, normals, scale, lift):
         elif name == "white-willow":
             target = (target[0] * 1.02, target[1] - .26 * math.hypot(c[0], c[2]) / radius,
                       target[2] * 1.02)
-        for local_index, p in enumerate(points):
-            rel = sub(p, c)
-            sy = size * (.80 if name == "spruce" else .94 if name == "stone-pine" else 1.0)
-            p2 = add(target, (rel[0] * size, rel[1] * sy, rel[2] * size))
+        sy = size * (.80 if name == "spruce" else .94 if name == "stone-pine" else 1.0)
+        transformed = [add(target, (rel[0] * size, rel[1] * sy, rel[2] * size))
+                       for rel in (sub(p, c) for p in points)]
+        if name == "oak":
+            transformed = oak_inner_overlap(transformed)
+            target = mean(transformed)
+        for p2 in transformed:
             result.append(p2)
             local = unit(add(sub(p2, target), (0, .18, 0)))
             envelope = unit((p2[0] / radius, (p2[1] - centre_y) / max(high - low, 1) * 1.6,
                              p2[2] / radius))
             # Branch sprays share the crown's lighting, with some local bough volume retained.
-            local_weight = (.25 if name == "stone-pine" else .40 if name in ("maple", "birch")
+            local_weight = (.25 if name == "stone-pine" else .40 if name in ("oak", "maple", "birch")
                             else .35 if name == "white-willow" else .65)
             n = unit(add(add(mul(local, local_weight), mul(envelope, 1 - local_weight)), (0, .22, 0)))
             # Keep a soft underside without the uniformly upward-facing original normals.
@@ -298,8 +313,8 @@ def branch_spray_uvs(count, name):
         group, plate = divmod(card, 3)
         cell = (group * 3 + plate) % 4
         x, y = cell % 2, cell // 2
-        # Birch's source plates face the opposite way to the other three species.
-        flip_v = plate != 0 if name == "birch" else plate == 0
+        # Oak and birch source plates face the opposite way to the other atlas species.
+        flip_v = plate != 0 if name in ("oak", "birch") else plate == 0
         corners = [(0, 1), (1, 1), (1, 0), (0, 0)]
         # Flip whole sprays to break repetition while preserving the transparent cell margin.
         for u, v in corners:
@@ -320,7 +335,7 @@ def rebuild(name, source):
     raw = subprocess.run(["git", "show", f"{source}:{relative}"], cwd=ROOT,
                          check=True, capture_output=True).stdout
     glb = GLB(raw)
-    if name in ("stone-pine", "maple", "white-willow", "birch"):
+    if name in ("oak", "stone-pine", "maple", "white-willow", "birch"):
         atlas = ROOT / f"assets/trees/textures/{name}-boughs.png"
         glb.replace_image(1, atlas.read_bytes(), f"{name}-branch-sprays")
     elif name == "pine":
@@ -343,7 +358,7 @@ def rebuild(name, source):
                         positions, normals, glb.values(attrs["TEXCOORD_0"]), scale)
                 else:
                     positions, normals, colors = foliage(name, positions, normals, scale, lift)
-                if name in ("stone-pine", "maple", "white-willow", "birch"):
+                if name in ("oak", "stone-pine", "maple", "white-willow", "birch"):
                     glb.write_values(attrs["TEXCOORD_0"], branch_spray_uvs(len(positions), name))
                 attrs["COLOR_0"] = glb.add_colors(colors)
                 material.setdefault("extras", {})["outpostFoliageNormalMode"] = "volume"

@@ -1,0 +1,47 @@
+Built-in image_gen generation and one layout edit, 2026-10-16.
+Output: assets/trees/textures/oak-boughs.png
+Selected generated RGBA copied unchanged; no programmatic image editing.
+
+Reference roles:
+- assets/trees/oak_oak-direct-bough-1024.png at revision 79aa6c5: inspected reference for oak leaf identity and existing material treatment; not an edit target.
+- assets/trees/textures/maple-boughs.png: inspected reference for coherent RTS branch-group craftsmanship; not an edit target.
+- The first atlas was newly generated from the written specification, without passing the old assets as image inputs.
+- The layout refinement used only the first newly generated oak atlas as its edit target.
+
+Exact initial generation prompt:
+Use case: stylized-concept.
+Asset type: transparent 2-by-2 OAK foliage-card texture atlas for a low-polygon tree in a real-time strategy game.
+Primary request: a NEW square RGBA atlas of EXACTLY FOUR distinct broad asymmetric leafy OAK boughs, one bough in each of four equal square quadrants. Each bough has approximately 35–45 clearly recognizable medium oak leaves attached to connected branching woody twigs. These are mature leafy summer boughs with coherent leafy body, not sparse twigs. Actual transparent background, not a scene or concept sheet.
+Oak identity: elongated OAK leaves with several soft ROUNDED lobes along either side of a central rib, rounded lobe tips and a blunt rounded leaf end; characteristic recognizable lobed oak silhouette. No pointed palmate maple shapes, serrated triangular birch shapes, lance-shaped willow leaves, needles or generic oval leaves. Each leaf is approximately one-seventh to one-ninth of the whole roughly 2-meter bough span. Quiet natural central veins, no bright yellow vein outlines.
+Branch body and composition: Each bough begins with a short slender muted-brown stem near the LOWER MIDDLE of its quadrant. It forks naturally UPWARD and SIDEWAYS into several uneven main sprays plus fine secondary leaf-bearing forks. Use grouped overlapping medium leaves along these sprays to form a substantial inner foliage body, including the center of the bough. Keep several uneven clear transparent channels between sprays, varying in width, and scattered small irregular leaf gaps. Main twig ribs remain visible in places through the leaves. The four variants must differ in twig curvature, asymmetric lengths, uneven masses and gaps while all keeping this same stem-to-tip orientation.
+Density requirement: target about 35–42 percent actual meaningful opaque leaf coverage of each FULL quadrant including transparent padding. Enough overlapping leaves and secondary sprays to read as a mature leafy summer branch from a 40-meter game camera. A few partially hidden leaves can support the visible medium leaf groups. Do not produce a bare skeletal three-pronged branch, a mass of fine speckles, a single circular leaf pad, a perfect rosette or repeated rounded balls. Keep true branch structure and meaningful openings.
+STRICT ATLAS LAYOUT: EXACT two rows by two columns of EQUAL square cells. Center each whole bough safely inside its own cell. Keep SIX TO SEVEN PERCENT of the cell width completely empty and TRANSPARENT inside ALL FOUR edges of each cell. Each branch's entire bounding box must fit within at most 86 percent of its cell width and 86 percent of its cell height. In whole-canvas coordinates, the safe region for each branch is approximately 3.5–46.5 percent or 53.5–96.5 percent horizontally and vertically. Do not enlarge branches into this safety margin. All leaf tips and twigs must be fully contained. Wide transparent cross-shaped gutter through the exact canvas center; no leaf crosses or approaches a divider. No drawn grid, labels, frames or border.
+Style and color: believable stylized realism for an RTS game, clean readable foliage groups and modest natural leaf detail, cohesive with a realistic stylized maple-bough atlas. Muted MEDIUM GREEN, slightly deeper and less yellow than maple, approximate average leaf RGB(85,105,50). A little natural variation between darker interior leaves and middle-green outer leaves. No neon lime, saturated yellow, bright white, gray-silver wash, candy colors, glowing veins or bright rim edges. Slender woody twigs muted brown-gray.
+Lighting and camera: neutral evenly diffuse material ALBEDO, perfectly orthographic facing the viewer, modest natural leaf rotations. No strong directional lighting, cast shadows, backlit glow, rim light, background shadows or environment.
+Transparency: true RGBA with fully transparent background and transparent internal channels. Clean antialiased rounded-lobed leaf edges. No printed checkerboard, colored backdrop, solid green backing or black painting inside gaps.
+Avoid: full tree or tree silhouette, trunk, roots, landscape, sky, grass, flowers, acorns, fruit, sparse skeletons, giant leaves, generic oval leaves, circular rosettes, dense green cotton balls, foliage spheres, pom-poms, text, watermark, labels, frame, cut-off leaf tips, divider crossings and bright yellow veins.
+Output only the finished square transparent 2x2 atlas with FOUR mature oak bough variants, complete within their safely padded quadrants.
+
+Layout iteration rationale:
+The initial atlas had recognizable rounded-lobed oak leaves and 31.4-37.0 percent alpha>127 coverage per cell, but two left-column tips had only 6-7 px clearance from the center divider. One focused ImageGen edit repositioned and minimally reduced each branch to create safer internal margins while retaining leaf body.
+
+Exact layout refinement prompt:
+Use case: precise-object-edit.
+Asset type: transparent 2-by-2 oak foliage-card atlas. LAYOUT CORRECTION ONLY.
+Input image: the supplied four-bough oak atlas is the edit target.
+Required change: reposition and MINIMALLY resize EACH of the four existing oak boughs independently so every bough fits safely inside its own quadrant with SIX TO SEVEN PERCENT transparent clearance on all four cell edges. Preserve the current full leafy body, all individual leaves, all twig forks and the exact four variants.
+The current left-column branches are shifted too far toward the middle divider. Center each branch's bounding box inside its own square cell. A very small reduction of approximately FIVE PERCENT in width and height is sufficient; do NOT shrink them ten or twenty percent, do not make small isolated branches swimming in empty space. Keep them as LARGE and FULL as possible while meeting the margin. Most of the correction should be repositioning, not downsizing.
+For a 1254-by-1254 output, each cell is 627 square: every branch should fit inside local cell coordinates about x=40 to587 and y=40 to587, with its longest dimension close to547 pixels. For another output size, use equivalent proportional 6.5 percent padding. Maintain exactly four equal quadrants and an empty transparent central cross-shaped gutter. Do not scale the entire atlas as one image. No divider crossing or clipping.
+PRESERVE EVERYTHING ELSE: identical rounded-lobed OAK leaf shapes, leaf count, leaf-group density, internal negative spaces, four asymmetric branch structures, lower-middle stems fanning upward and sideways, neutral diffuse albedo, subdued medium leaf-green palette and fine woody twigs. Do not add or remove leaves. Do not redraw veins or alter leaf size relative to twigs. Do not change exposure, saturation, hue, brightness, highlights or lighting. No redesign of the boughs.
+Keep true alpha transparency with clean leaf edges and transparent branch gaps. Do not turn any near-transparent fringe colors opaque. No checkerboard, colored background, frame, grid lines, text or labels.
+Output only the same four full oak boughs, minimally reduced and recentered into safely padded equal atlas cells.
+
+Read-only final inspection:
+- 1254 x 1254 RGBA, four equal 627 x 627 cells.
+- Alpha>127 coverage TL/TR/BL/BR: 34.98%, 29.67%, 34.50%, 32.90%.
+- Alpha>77 coverage TL/TR/BL/BR: 35.55%, 30.15%, 35.04%, 33.42%.
+- Meaningful-alpha margins (left, top, right, bottom), pixels: TL (57,96,37,51); TR (68,74,57,41); BL (52,46,32,95); BR (57,31,36,77).
+- Minimum meaningful-alpha margin 31 px, or 4.94% of a cell; most margins exceed 6%, but a few tips remain slightly closer than the strict requested 6-7%.
+- Center divider and outer-edge alpha maximum 1/255.
+- Opaque mean RGB approximately (105,113,50); the layout edit brightened red/green relative to the initial candidate despite the preservation instruction.
+- Final source data is preserved as generated. In-game tint and framing decisions are left to the tree material/UV integration.
