@@ -1,0 +1,12 @@
+Generated with the built-in image_gen tool. Original output retained unchanged.
+Texture import: lossless, mipmaps, alpha-border fix, no premultiplied alpha.
+
+Use case: stylized-concept.
+Asset type: one transparent PNG sprite atlas for a medieval strategy game's small top resource bar.
+Input image is STYLE REFERENCE ONLY: match the softly embossed antique-gold pictograms in the existing medallion atlas. Do not reproduce the colored medallions or their rings.
+Create exactly THREE separate standalone golden resource pictograms, arranged left to right in ONE ROW on a transparent 3:1 canvas, ideally 1536x512 pixels. Each equal square cell contains one pictogram centered at (256,256), (768,256), (1280,256), occupying about 320x320 pixels with at least80px transparent padding. Equal visual weight and scale.
+LEFT, GOLD: three short stacks of medieval gold coins, with one leaning coin in front, no currency signs. Simple chunky silhouettes.
+MIDDLE, POPULATION: three human head-and-shoulder silhouettes, one larger centered person and two smaller people flanking them. Match the reference population symbol's readable silhouette.
+RIGHT, SCORE: a bold five-pointed star surrounded by two simple laurel branches forming an open wreath. Five large leaves per branch, broad shapes; no crown or ribbon.
+Material: warm antique gold with pale golden highlights, darker bronze beveled edges, subtle hand-painted relief, consistent lighting from upper left. Bold clean silhouettes that remain recognizable at30px. No fine filigree, no lettering, no numbers.
+Every pixel beyond the actual glyph shapes must be genuinely transparent. No colored backgrounds, no badges, no circles around icons, no borders, no scene, no panel, no visible grid, no drop shadows extending far beyond the icon, no watermark. Three centered distinct symbols only.

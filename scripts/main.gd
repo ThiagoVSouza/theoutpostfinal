@@ -20,11 +20,17 @@ extends Node3D
 ## Runs after its children each frame (process_priority), so the level of detail is decided from
 ## the zoom the camera has just settled on rather than the previous frame's.
 ##
-## The sun's shadow map is one orthogonal split stretched over the camera's depth range, so it
-## covers exactly what is on screen. Godot's directional shadows reach from the camera out to
-## directional_shadow_max_distance, and the camera's depth range changes with its zoom, so the
-## distance follows camera.far every frame. A shadow texel is then roughly the larger of the view's
-## width and its depth, over the shadow map's 4096 texels.
+## The sun's shadow map is one orthogonal split stretched over the depth it shadows, so it covers
+## exactly what is on screen. Godot's directional shadows reach from the camera's near plane out to
+## directional_shadow_max_distance; the camera keeps its near plane just above the tallest thing in
+## view and works out shadow_reach, the depth of the farthest ground on screen (see
+## StrategyCamera), and the distance follows that every frame. A shadow texel is then roughly the
+## larger of the view's width and that depth, over the shadow map's 4096 texels. At the closest zoom
+## that depth is about 120 m; when the shadows reached camera.far it was about 760 m.
+##
+## The soft shadow filter is at medium quality (project.godot). Godot rotates the filter's samples
+## per pixel, which temporal anti-aliasing would normally smooth away; without it, the default low
+## quality leaves that rotation as a dithered mesh across every penumbra.
 
 @onready var board: Board = $Board
 @onready var camera: StrategyCamera = $Camera
@@ -60,8 +66,8 @@ func _update_view(delta: float) -> void:
 	var meshes := lod.tier == ViewLod.Tier.DETAIL
 	forest.visible = meshes
 	board.set_forest_painted(not meshes)
-	if not is_equal_approx(sun.directional_shadow_max_distance, camera.far):
-		sun.directional_shadow_max_distance = camera.far
+	if not is_equal_approx(sun.directional_shadow_max_distance, camera.shadow_reach):
+		sun.directional_shadow_max_distance = camera.shadow_reach
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed and not event.echo): return

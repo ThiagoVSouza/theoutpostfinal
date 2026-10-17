@@ -4,6 +4,7 @@ extends SceneTree
 ## Also saves a top-left -detail.png region at original pixel resolution.
 ## Add --interaction to exercise native pointer events and capture flag feedback states.
 ## Add --menu to check the seven icon buttons and their native selection/input behavior.
+## Add --resources to check resource values, responsive layout, and pointer passthrough.
 
 var _failures := 0
 var _flag_activations := 0
@@ -12,6 +13,7 @@ var _pointer_inside := false
 var _menu_actions: Array[StringName] = []
 const MENU_SECTIONS: Array[StringName] = [
 	&"domain", &"population", &"finances", &"military", &"diplomacy", &"religion", &"knowledge"]
+const RESOURCE_KEYS: Array[StringName] = [&"gold", &"population", &"score"]
 
 class PointerProbe extends Node:
 	var left_presses := 0
@@ -27,6 +29,7 @@ func _capture() -> void:
 	var dimensions := Vector2i(1600, 1000)
 	var interaction := false
 	var menu_review := false
+	var resources_review := false
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--output="):
 			output = argument.trim_prefix("--output=")
@@ -38,6 +41,8 @@ func _capture() -> void:
 			interaction = true
 		elif argument == "--menu":
 			menu_review = true
+		elif argument == "--resources":
+			resources_review = true
 	if dimensions.x <= 0 or dimensions.y <= 0:
 		push_error("Review dimensions must be positive.")
 		quit(1)
@@ -68,6 +73,7 @@ func _capture() -> void:
 	var hud := game.get_node_or_null("GameUI") as CanvasLayer
 	var header: Control
 	var menu: Control
+	var resources: Control
 	_check(hud != null, "Main/GameUI CanvasLayer is missing.")
 	if hud != null:
 		_check(hud.layer == 10 and hud.layer < 100, "Header must use HUD layer 10 below loading overlay 100.")
@@ -108,6 +114,9 @@ func _capture() -> void:
 			_check(menu != null, "Seven-button settlement menu is missing.")
 			if menu != null:
 				_check_menu_layout(menu, dimensions)
+		if resources_review:
+			resources = hud.get_node_or_null("SettlementResources") as Control
+			_check(resources != null, "Settlement resources Control is missing.")
 
 	var image := viewport.get_texture().get_image()
 	_check(image != null and not image.is_empty(), "Viewport returned no pixels.")
@@ -127,6 +136,8 @@ func _capture() -> void:
 		await _review_interaction(viewport, header, destination)
 	if menu_review and menu != null:
 		await _review_menu(viewport, menu, destination)
+	if resources_review and resources != null:
+		await _review_resources(viewport, resources, header, game.get_node("StatsOverlay"), destination)
 	print("HEADER_REVIEW_CHECKS ", "PASS" if _failures == 0 else "FAIL (%d)" % _failures)
 	viewport.queue_free()
 	await process_frame
@@ -340,6 +351,154 @@ func _check_menu_selection(menu: Control, buttons: Array, selected: StringName) 
 		var rim := button.get_node_or_null("Medallion/SelectionRim") as Control
 		if rim != null:
 			_check(rim.visible == active, "Menu selection rim is not exclusive.")
+
+func _review_resources(viewport: SubViewport, resources: Control, header: Control, stats: Node, destination: String) -> void:
+	_check_pass_through(resources, null)
+	_check(resources.has_method("set_resource"), "Resource HUD is missing its runtime update API.")
+	var icons: Array = resources.get("icons")
+	var totals: Array = resources.get("total_labels")
+	var increments: Array = resources.get("increment_labels")
+	var cells: Array = resources.get("cells")
+	_check(icons.size() == 3 and totals.size() == 3 and increments.size() == 3 and cells.size() == 3, "Resource HUD must contain three icon/value pairs.")
+	if not resources.has_method("set_resource") or icons.size() != 3 or totals.size() != 3 or increments.size() != 3 or cells.size() != 3:
+		return
+	var parts: Array[Dictionary] = []
+	for index in RESOURCE_KEYS.size():
+		_check(StringName(cells[index].get_meta("resource", &"")) == RESOURCE_KEYS[index], "Resource order is incorrect at index " + str(index))
+		parts.append({"id": RESOURCE_KEYS[index], "icon": icons[index], "total": totals[index], "yearly": increments[index]})
+		_check(int(resources.get(str(RESOURCE_KEYS[index]) + "_total")) == 0, "Resource total does not default to zero.")
+		_check(int(resources.get(str(RESOURCE_KEYS[index]) + "_yearly_increment")) == 0, "Resource yearly increment does not default to zero.")
+	_check_resource_text(parts, ["0", "0", "0"], ["+0", "+0", "+0"], "default")
+	_check_resource_layout(parts, header, stats, viewport.size, "default")
+	_save_resource_state(viewport, parts, destination, "default", true)
+
+	_set_resource_values(resources, [1250, 180, 420], [125, 12, 35])
+	await _draw_review_frames()
+	_check_resource_text(parts, ["1,250", "180", "420"], ["+125", "+12", "+35"], "sample")
+	_check_resource_layout(parts, header, stats, viewport.size, "sample")
+	_save_resource_state(viewport, parts, destination, "sample", true)
+	await _review_resource_pointer(viewport, parts)
+
+	_set_resource_values(resources, [5, 6, 7], [-125, 0, -35])
+	await _draw_review_frames()
+	_check_resource_text(parts, ["5", "6", "7"], ["-125", "+0", "-35"], "negative")
+	_check_resource_layout(parts, header, stats, viewport.size, "negative")
+	_save_resource_state(viewport, parts, destination, "negative")
+
+	_set_resource_values(resources, [1234567890, 9876543210, 1234567890123], [9999999, -1234567, 0])
+	await _draw_review_frames()
+	_check_resource_layout(parts, header, stats, viewport.size, "large")
+	for part in parts:
+		var total: Label = part.total
+		_check(not total.text.is_empty() and total.text != "0", "Large resource total was lost: " + str(part.id))
+	_check((parts[0].yearly as Label).text.begins_with("+"), "Positive large yearly increment lost its sign.")
+	var negative_text := (parts[1].yearly as Label).text.replace("−", "-")
+	_check(negative_text.begins_with("-"), "Negative large yearly increment lost its sign.")
+	_check((parts[2].yearly as Label).text == "+0", "Zero yearly increment lost its explicit plus sign.")
+	_save_resource_state(viewport, parts, destination, "large")
+	_set_resource_values(resources, [0, 0, 0], [0, 0, 0])
+	await _draw_review_frames()
+	_check_resource_text(parts, ["0", "0", "0"], ["+0", "+0", "+0"], "reset")
+
+func _set_resource_values(resources: Control, totals: Array, increments: Array) -> void:
+	for index in RESOURCE_KEYS.size():
+		resources.call("set_resource", RESOURCE_KEYS[index], totals[index], increments[index])
+		_check(int(resources.get(str(RESOURCE_KEYS[index]) + "_total")) == int(totals[index]), "Resource update lost the stored total.")
+		_check(int(resources.get(str(RESOURCE_KEYS[index]) + "_yearly_increment")) == int(increments[index]), "Resource update lost the stored yearly increment.")
+
+func _check_resource_text(parts: Array[Dictionary], totals: Array, increments: Array, state: String) -> void:
+	for index in parts.size():
+		var total: Label = parts[index].total
+		var yearly: Label = parts[index].yearly
+		_check(total.text == totals[index], "Incorrect resource total during " + state + ": " + total.text)
+		_check(yearly.text.replace("−", "-") == increments[index], "Incorrect yearly increment during " + state + ": " + yearly.text)
+
+func _check_resource_layout(parts: Array[Dictionary], header: Control, stats: Node, dimensions: Vector2i, state: String) -> void:
+	var bounds := Rect2(Vector2.ZERO, Vector2(dimensions)).grow(0.5)
+	var obstacles: Array[Rect2] = []
+	if header != null:
+		for property in ["banner", "shield", "name_label", "rank_label"]:
+			var decoration := header.get(property) as Control
+			if decoration != null:
+				obstacles.append(decoration.get_global_rect())
+	for child in stats.get_children():
+		if child is Control and child.is_visible_in_tree():
+			obstacles.append(child.get_global_rect())
+	var previous_pair := Rect2()
+	var total_y := 0.0
+	var yearly_y := 0.0
+	for index in parts.size():
+		var part := parts[index]
+		var icon: TextureRect = part.icon
+		var total: Label = part.total
+		var yearly: Label = part.yearly
+		var icon_rect := icon.get_global_rect()
+		var total_rect := total.get_global_rect()
+		var yearly_rect := yearly.get_global_rect()
+		var pair_rect := icon_rect.merge(total_rect).merge(yearly_rect)
+		var context := str(part.id) + " during " + state
+		_check(icon.texture != null, "Resource icon has no texture: " + context)
+		_check(bounds.encloses(pair_rect), "Resource content extends outside viewport: " + context)
+		_check(icon_rect.end.x <= minf(total_rect.position.x, yearly_rect.position.x) + 0.5, "Resource icon is not left of both values: " + context)
+		# Transparent line boxes may overlap; native captures verify the actual glyph gap.
+		var total_baseline := total_rect.position.y + total.get_character_bounds(0).position.y + total.get_theme_font("font").get_ascent(total.get_theme_font_size("font_size"))
+		var yearly_baseline := yearly_rect.position.y + yearly.get_character_bounds(0).position.y + yearly.get_theme_font("font").get_ascent(yearly.get_theme_font_size("font_size"))
+		_check(total_baseline < yearly_baseline, "Resource total is not above its yearly value: " + context)
+		_check(absf(total_rect.position.x - yearly_rect.position.x) <= 0.5, "Resource value columns are misaligned: " + context)
+		_check(yearly.get_theme_font_size("font_size") < total.get_theme_font_size("font_size"), "Resource yearly value is not smaller than the total: " + context)
+		for label: Label in [total, yearly]:
+			var text_width := label.get_theme_font("font").get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, label.get_theme_font_size("font_size")).x
+			_check(text_width <= label.size.x + 0.5, "Resource value does not fit its label: " + context + " " + label.text)
+			_check(not label.text.contains("…") and not label.text.contains("..."), "Resource value is ellipsized: " + context)
+		for obstacle in obstacles:
+			_check(not pair_rect.intersects(obstacle), "Resource overlaps the settlement header or developer stats: " + context)
+		if index == 0:
+			total_y = total_rect.position.y
+			yearly_y = yearly_rect.position.y
+		else:
+			_check(previous_pair.end.x < pair_rect.position.x, "Resource groups overlap or have no horizontal gap: " + context)
+			_check(absf(total_y - total_rect.position.y) <= 0.5 and absf(yearly_y - yearly_rect.position.y) <= 0.5, "Resource rows are misaligned: " + context)
+		previous_pair = pair_rect
+		print("RESOURCE_REVIEW_PAIR ", context, " ", pair_rect, " total=", total.text, " yearly=", yearly.text)
+
+func _review_resource_pointer(viewport: SubViewport, parts: Array[Dictionary]) -> void:
+	var probe := PointerProbe.new()
+	viewport.add_child(probe)
+	_ensure_pointer_inside(viewport)
+	var flag_before := _flag_activations
+	var menu_before := _menu_actions.size()
+	for part in parts:
+		for control: Control in [part.icon, part.total, part.yearly]:
+			var point := control.get_global_rect().get_center()
+			var before := probe.left_presses
+			_move_pointer(viewport, point)
+			_mouse_button(viewport, point, true)
+			_mouse_button(viewport, point, false)
+			await process_frame
+			_check(probe.left_presses == before + 1, "Resource content blocked gameplay input at " + str(point))
+	_check(_flag_activations == flag_before and _menu_actions.size() == menu_before, "Resource pointer passthrough activated another HUD control.")
+	print("RESOURCE_REVIEW_INTERACTION passthrough=", probe.left_presses)
+	probe.queue_free()
+
+func _save_resource_state(viewport: SubViewport, parts: Array[Dictionary], destination: String, state: String, full_capture := false) -> void:
+	var pixels := viewport.get_texture().get_image()
+	var strip_height := 96
+	for part in parts:
+		for control: Control in [part.icon, part.total, part.yearly]:
+			strip_height = maxi(strip_height, ceili(control.get_global_rect().end.y) + 16)
+	var top := pixels.get_region(Rect2i(0, 0, pixels.get_width(), mini(strip_height, pixels.get_height())))
+	var path := destination.get_basename() + "-resources-" + state + "-top.png"
+	_check(top.save_png(path) == OK, "Could not save resource " + state + " top strip.")
+	print("RESOURCE_REVIEW_TOP ", state, " ", path)
+	if full_capture:
+		var full_path := destination.get_basename() + "-resources-" + state + ".png"
+		_check(pixels.save_png(full_path) == OK, "Could not save resource " + state + " full capture.")
+		print("RESOURCE_REVIEW_CAPTURE ", state, " ", full_path)
+
+func _draw_review_frames() -> void:
+	for frame in 2:
+		await process_frame
+		await RenderingServer.frame_post_draw
 
 func _ensure_pointer_inside(viewport: SubViewport) -> void:
 	if not _pointer_inside:
