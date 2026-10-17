@@ -54,8 +54,7 @@ uniform vec4 deep_color : source_color = vec4(0.035, 0.20, 0.32, 1.0);
 
 uniform sampler2D grass_map : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2D grass_macro_map : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
-// Small tuft detail repeats over 30 m. The soft source keeps its original meadow-scale period,
-// using the same two texture reads as before the visual pass.
+// Small tuft detail repeats over 30 m. The soft source keeps its original meadow-scale period.
 uniform vec2 grass_tile_size = vec2(30.0, 27.5);
 uniform vec2 grass_macro_tile_size = vec2(657.0, 602.25);
 // Ratio of measured linear-light means (old / detail), so the added blades do not regrade the map.
@@ -66,9 +65,20 @@ uniform vec3 grass_mean : source_color = vec3(0.5058, 0.4979, 0.2848);
 // How strongly a second, much larger copy of the tile varies the grass, breaking up the 90 m
 // repeat. At 0 the repeat shows as a lattice from a kilometre up.
 uniform float grass_variation = 0.6;
-// Slightly stronger local pigment variation helps the meadow read at settlement scale without
-// adding geometry, repeated procedural spots, or another texture lookup. The mean is preserved.
-uniform float grass_detail_contrast = 1.08;
+// The tuft tile's contrast, split by scale. A third read of the same tile, three mip levels
+// blurrier, separates its soft cloudy blotches (cloud) from its blades and clumps (blades). The
+// blotches are calmed and the blades sharpened, so up close the meadow reads as grass rather than
+// as mottled felt. The blade boost fades out by grass_blades_fade metres a pixel, where it would
+// only add shimmer, and the blotches return to grass_far_contrast. The mean is preserved.
+uniform float grass_cloud_contrast = 0.8;
+// Dark detail (the gaps between clumps) is sharpened more than light (dry tips and bare specks),
+// which otherwise pop out as a repeating pale rash.
+uniform vec2 grass_blade_contrast = vec2(2.0, 1.3);
+uniform vec2 grass_blades_fade = vec2(0.08, 0.4);
+// The single contrast both scales fade to, which the tile had before the split.
+uniform float grass_far_contrast = 1.08;
+// A grade towards a fresher, more saturated meadow green, applied after the mean-preserving steps.
+uniform vec3 grass_grade = vec3(1.17, 1.17, 0.80);
 
 // Holding the sea and grass to their old colours (see the header). The lights are measured, not
 // derived, by drawing a flat upward-facing albedo under each lighting with the tonemap off: under
@@ -77,7 +87,9 @@ uniform float grass_detail_contrast = 1.08;
 // tonemap is not ACES, since the inverse below is ACES's.
 uniform bool hold_colours = false;
 uniform vec3 old_light = vec3(1.057, 1.042, 1.021);
-uniform vec3 new_light = vec3(1.69575, 1.67591, 1.34783);
+// new_light is re-measured whenever main.tscn's sun, rim or ambient change, with
+// tools/tree_visual_review.gd --calibrate (its calibration_light_multiplier).
+uniform vec3 new_light = vec3(1.67692, 1.61377, 1.30152);
 uniform float tonemap_exposure = 1.0;
 uniform float tonemap_white = 1.0;
 
@@ -208,13 +220,20 @@ vec3 sea(vec2 p) {
 	return deep_color.rgb + sheen_tint.rgb * sheen * sheen_strength;
 }
 
-vec3 grass(vec2 p) {
-	vec3 near = texture(grass_map, p / grass_tile_size).rgb * grass_detail_gain;
-	near = max(grass_mean + (near - grass_mean) * grass_detail_contrast, vec3(0.0));
+vec3 grass(vec2 p, float footprint) {
+	vec2 uv = p / grass_tile_size;
+	vec3 near = texture(grass_map, uv).rgb * grass_detail_gain;
+	vec3 cloud = texture(grass_map, uv, 3.0).rgb * grass_detail_gain;
+	vec3 detail = near - cloud;
+	float sharpen = dot(detail, vec3(1.0)) < 0.0 ? grass_blade_contrast.x : grass_blade_contrast.y;
+	float far_fade = smoothstep(grass_blades_fade.x, grass_blades_fade.y, footprint);
+	float blotches = mix(grass_cloud_contrast, grass_far_contrast, far_fade);
+	float blades = mix(sharpen, grass_far_contrast, far_fade);
+	near = max(grass_mean + (cloud - grass_mean) * blotches + detail * blades, vec3(0.0));
 	// The soft original tile gives broad patches without enlarging individual grass blades.
 	vec2 far_uv = (mat2(vec2(0.80, 0.60), vec2(-0.60, 0.80)) * p) / grass_macro_tile_size;
 	vec3 far = texture(grass_macro_map, far_uv).rgb;
-	return near * mix(vec3(1.0), far / grass_mean, grass_variation);
+	return near * mix(vec3(1.0), far / grass_mean, grass_variation) * grass_grade;
 }
 
 // The painted canopy over the grass at p: RGB its colour, alpha how much of the ground it covers.
@@ -239,17 +258,17 @@ void fragment() {
 	// About one pixel of blend across the coast, at any zoom.
 	float reach = max(fwidth(inland), 0.001);
 	float land = smoothstep(-reach * 0.5, reach * 0.5, inland);
+	// Metres per pixel along the worse screen axis; under a tilted camera the two differ.
+	float footprint = max(length(dFdx(p)), length(dFdy(p)));
 	vec3 ground = vec3(0.0);
 	if (land < 1.0) ground += sea(p) * (1.0 - land);
-	if (land > 0.0) ground += grass(p) * land;
+	if (land > 0.0) ground += grass(p, footprint) * land;
 	vec3 color = hold(ground);
 	if (forest_paint > 0.0 && land > 0.0) {
 		vec4 crowns = canopy(p);
 		color = mix(color, crowns.rgb, crowns.a * forest_paint * land);
 	}
 	if (grid_enabled && grid_fade > 0.0) {
-		// Metres per pixel along the worse screen axis; under a tilted camera the two differ.
-		float footprint = max(length(dFdx(p)), length(dFdy(p)));
 		color = mix(color, held_grid_color, map_grid(p, footprint) * grid_fade);
 	}
 	ALBEDO = color;
