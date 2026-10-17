@@ -440,7 +440,10 @@ func _check_resource_layout(parts: Array[Dictionary], header: Control, stats: No
 		_check(icon.texture != null, "Resource icon has no texture: " + context)
 		_check(bounds.encloses(pair_rect), "Resource content extends outside viewport: " + context)
 		_check(icon_rect.end.x <= minf(total_rect.position.x, yearly_rect.position.x) + 0.5, "Resource icon is not left of both values: " + context)
-		_check(total_rect.end.y <= yearly_rect.position.y + 0.5, "Resource total and yearly value overlap: " + context + " total=" + str(total_rect) + " yearly=" + str(yearly_rect))
+		# Transparent line boxes may overlap; native captures verify the actual glyph gap.
+		var total_baseline := total_rect.position.y + total.get_character_bounds(0).position.y + total.get_theme_font("font").get_ascent(total.get_theme_font_size("font_size"))
+		var yearly_baseline := yearly_rect.position.y + yearly.get_character_bounds(0).position.y + yearly.get_theme_font("font").get_ascent(yearly.get_theme_font_size("font_size"))
+		_check(total_baseline < yearly_baseline, "Resource total is not above its yearly value: " + context)
 		_check(absf(total_rect.position.x - yearly_rect.position.x) <= 0.5, "Resource value columns are misaligned: " + context)
 		_check(yearly.get_theme_font_size("font_size") < total.get_theme_font_size("font_size"), "Resource yearly value is not smaller than the total: " + context)
 		for label: Label in [total, yearly]:

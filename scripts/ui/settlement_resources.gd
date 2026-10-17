@@ -253,7 +253,7 @@ func _layout() -> void:
 		icons[index].size = Vector2.ONE * icon_size
 		var text_x := padding + icon_size + roundf(8.0 * factor)
 		var text_width := maxf(1.0, cell_width - text_x - padding)
-		total_labels[index].position = Vector2(text_x, 1)
+		total_labels[index].position = Vector2(text_x, 6)
 		total_labels[index].size = Vector2(text_width, 17)
 		increment_labels[index].position = Vector2(text_x, 18)
 		increment_labels[index].add_theme_font_size_override("font_size", INCREMENT_FONT_SIZE)
