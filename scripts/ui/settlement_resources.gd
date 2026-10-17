@@ -9,7 +9,7 @@ const RESOURCES: Array[StringName] = [&"gold", &"population", &"score"]
 const ICON_REGIONS: Array[Rect2] = [
 	Rect2(56, 112, 616, 512), Rect2(740, 112, 692, 512), Rect2(1484, 112, 656, 512),
 ]
-const STRIP_SIZE := Vector2(384, 44)
+const STRIP_SIZE := Vector2(384, 32)
 const MINIMUM_WIDTH := 264.0
 const TOTAL_FONT_SIZE := 14
 const MINIMUM_TOTAL_FONT_SIZE := 12
@@ -134,7 +134,12 @@ func _label(parent: Control, node_name: String, font: Font, colour: Color) -> La
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	label.clip_text = true
-	label.add_theme_font_override("font", font)
+	# Trim Spectral's extra line margins around digits without shrinking the glyphs.
+	var compact_font := FontVariation.new()
+	compact_font.base_font = font
+	compact_font.spacing_top = -2
+	compact_font.spacing_bottom = -3
+	label.add_theme_font_override("font", compact_font)
 	label.add_theme_color_override("font_color", colour)
 	label.add_theme_color_override("font_shadow_color", Color(0.04, 0.04, 0.02, 0.85))
 	label.add_theme_constant_override("shadow_offset_x", 1)
@@ -248,16 +253,15 @@ func _layout() -> void:
 		icons[index].size = Vector2.ONE * icon_size
 		var text_x := padding + icon_size + roundf(8.0 * factor)
 		var text_width := maxf(1.0, cell_width - text_x - padding)
-		total_labels[index].position = Vector2(text_x, 2)
-		# Leave room for Spectral's native line height at the smaller type sizes.
-		total_labels[index].size = Vector2(text_width, 23)
-		increment_labels[index].position = Vector2(text_x, 25)
+		total_labels[index].position = Vector2(text_x, 1)
+		total_labels[index].size = Vector2(text_width, 17)
+		increment_labels[index].position = Vector2(text_x, 18)
 		increment_labels[index].add_theme_font_size_override("font_size", INCREMENT_FONT_SIZE)
-		increment_labels[index].size = Vector2(text_width, 16)
+		increment_labels[index].size = Vector2(text_width, 11)
 		_refresh_resource(index)
 	for index in _dividers.size():
-		_dividers[index].position = Vector2(roundf(cell_width * (index + 1)), 8)
-		_dividers[index].size = Vector2(1, size.y - 16)
+		_dividers[index].position = Vector2(roundf(cell_width * (index + 1)), 5)
+		_dividers[index].size = Vector2(1, size.y - 10)
 
 func _find_free_band(viewport_size: Vector2, reserved: Array[Rect2], preferred_size: Vector2) -> Rect2:
 	# Keep the usual top-centre placement whenever it fits. Narrow windows use the
