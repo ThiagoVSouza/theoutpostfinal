@@ -97,13 +97,13 @@ func _build_closeup() -> void:
 	# Match StrategyCamera's closest gameplay view, including its depth range/shadow coverage.
 	var pitch := StrategyCamera.HOME_PITCH
 	var zoom := StrategyCamera.MIN_ZOOM
-	var distance := (WorldSpec.FRAME_HEIGHT * 1.25 + zoom * 0.5 * cos(pitch)) / sin(pitch)
+	var distance := StrategyCamera.distance_for(zoom, pitch)
 	_camera.size = zoom
 	_camera.position = Vector3(0, sin(pitch), cos(pitch)) * distance
 	_camera.look_at(Vector3.ZERO)
-	_camera.near = 1.0
+	_camera.near = StrategyCamera.near_for(pitch, StrategyCamera.TALLEST_PIECE)
 	_camera.far = distance + zoom * 0.5 / tan(pitch) + WorldSpec.FRAME_DEPTH / sin(pitch) + 10.0
-	_world.get_node("Sun").directional_shadow_max_distance = _camera.far
+	_world.get_node("Sun").directional_shadow_max_distance = StrategyCamera.shadow_reach_for(zoom, pitch)
 	var overlay := CanvasLayer.new()
 	_viewport.add_child(overlay)
 	_label(overlay, "%s  /  closest gameplay zoom: %.0f m" % [SPECIES[_closeup], zoom], Vector2(38, 30), 24)

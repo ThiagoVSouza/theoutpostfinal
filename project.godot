@@ -27,3 +27,7 @@ window/size/viewport_height=1000
 window/size/mode=4
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+
+[rendering]
+
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality=3
