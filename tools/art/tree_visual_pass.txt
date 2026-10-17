@@ -110,14 +110,19 @@ Budget, including the runtime two-triangle ground patch:
 Forest appends the base as a shared third material surface in each species mesh,
 using the existing chunk MultiMesh transforms. It adds one surface draw per visible
 species/chunk, not one node or draw per tree. The ImageGen-created
-tree_ground_patch.png paints exposed earth, dust, leaf litter and small pebbles
-around the unchanged trunk (see tree_ground_patch_prompt.txt for the exact prompt).
-All ground detail is flat artwork. Its alpha blends the paint into the exact Board
-grass colour before lighting, while alpha scissor discards the transparent border.
-It stays in the opaque rendering path and receives the scene's tree shadows.
-The patch rotates with each tree, with stable UV flips, slight scale differences
-and subtle brightness variation. Texture and shader are loaded once in _ready().
-The base shader keeps three texture reads: two for matching grass and one for paint.
+tree_ground_variants.png supplies four paintings of broken exposed earth, low green
+cover, stone marks and litter, selected to suit the tree species. The earlier
+tree_ground_patch.png is retained as the previous artwork. See
+tree_ground_variants_prompt.txt for the exact generation prompts and
+tree_ground_visual_pass.txt for the ground and trunk-contact design.
+All ground detail remains flat artwork. Its alpha blends the paint into the Board
+grass colour before lighting, while alpha scissor discards empty areas. It stays
+in the opaque rendering path and receives the scene's tree shadows. A narrow
+contact treatment follows the measured trunk footprint, and a short pigment fade
+on the existing bark connects the trunk to the soil without modifying the GLBs.
+The patch rotates with each tree, with stable variations from its transform.
+The base uses two grass reads plus one paint read for the original meadow, or
+three grass reads plus paint when the Board exposes the newer cloud/blade grade.
 The paint uses high-quality VRAM compression, mipmaps and alpha-border repair.
 
 Foliage COLOR_0 supplies direction-independent bough shading; all eight assets now
@@ -134,8 +139,9 @@ VRAM compression, high quality and mipmaps.
 Keep the grass()/hold() implementations and matching default uniforms in
 shaders/board.gdshader and shaders/tree_base.gdshader synchronized. The intentional
 duplication avoids the project's documented loader-thread shader-include issue.
-Forest copies explicit Board material overrides; Godot returns null for unoverridden
-shader defaults, so those defaults must match in both shaders.
+Forest copies explicit Board material overrides and reads unoverridden defaults
+from RenderingServer at initialization, so the paint edge follows the active
+Board settings. The corresponding grass algorithms must still match.
 
 Lighting: ambient .65, rim .16, sun 1.08; existing directions and ACES exposure retained.
 The ground compensation new_light is measured, not estimated:

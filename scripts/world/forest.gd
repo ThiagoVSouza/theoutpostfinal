@@ -35,6 +35,11 @@ const SEED := 20261016
 const PAINT_TEXELS := 1024
 ## Crowns shade their own insides, so seen from above a forest is darker than its leaves' colour.
 const CANOPY_SHADE := 0.8
+const BASE_HEIGHT := 0.018
+## Base vertex colours store metre radii / this scale, and the family index / 3.
+## Every channel stays in 0..1 when Godot packs the vertex colours.
+const ROOT_RADIUS_SCALE := 1.0
+enum GroundFamily { AIRY_BROADLEAF, EARTHY_BROADLEAF, CONIFER, WILLOW }
 
 ## One imported tree scene per species, and the shader the foliage cards are drawn with. Set in
 ## the scene rather than preloaded, for the reason in board.gd.
@@ -213,11 +218,15 @@ func _add_species(scene: PackedScene) -> void:
 	var mesh := ArrayMesh.new()
 	var radius := 0.0
 	var crown := Color(0.1, 0.2, 0.08)
+	var family := _ground_family(scene.resource_path.get_file().get_basename())
+	var footprint := Rect2(-0.15, -0.15, 0.3, 0.3)
+	var measured_footprint := false
 	for node in tree.find_children("*", "MeshInstance3D", true, false):
 		var part := node as MeshInstance3D
 		# The models' parts all sit at the tree's origin; their transforms are not baked in.
 		for surface in part.mesh.get_surface_count():
 			var material := part.get_active_material(surface)
+			var arrays := part.mesh.surface_get_arrays(surface)
 			if material is BaseMaterial3D and (material as BaseMaterial3D).transparency == BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR:
 				var leaves := material as BaseMaterial3D
 				var foliage := ShaderMaterial.new()
@@ -234,25 +243,93 @@ func _add_species(scene: PackedScene) -> void:
 				material = foliage
 				var size := part.mesh.get_aabb().size
 				radius = maxf(size.x, size.z) * 0.5
-				crown = _mean_foliage(leaves) * _mean_vertex_colour(part.mesh.surface_get_arrays(surface)) * CANOPY_SHADE
-			mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, part.mesh.surface_get_arrays(surface))
+				crown = _mean_foliage(leaves) * _mean_vertex_colour(arrays) * CANOPY_SHADE
+			elif material is BaseMaterial3D:
+				var wood_footprint := _wood_ground_footprint(arrays)
+				footprint = footprint.merge(wood_footprint) if measured_footprint else wood_footprint
+				measured_footprint = true
+				material = _make_trunk_material(material as BaseMaterial3D, wood_footprint, family)
+			mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 			mesh.surface_set_material(mesh.get_surface_count() - 1, material)
 	tree.free()
-	_add_base_surface(mesh, clampf(radius * 0.48, 0.85, 2.3))
+	var patch_scale := 0.42 if family == GroundFamily.AIRY_BROADLEAF else 0.48
+	_add_base_surface(mesh, clampf(radius * patch_scale, 0.85, 2.3), footprint, family)
 	_meshes.append(mesh)
 	_crown_radius.append(radius)
 	_crown_colour.append(crown)
 
+static func _ground_family(name: String) -> int:
+	match name:
+		"birch": return GroundFamily.AIRY_BROADLEAF
+		"pine", "stone-pine", "spruce", "cypress": return GroundFamily.CONIFER
+		"white-willow": return GroundFamily.WILLOW
+	return GroundFamily.EARTHY_BROADLEAF
+
+## Measure where the authored wood crosses the patch plane, rather than its buried bottom ring.
+## The contact seam follows this ellipse; it does not shade the whole ground patch.
+static func _wood_ground_footprint(arrays: Array) -> Rect2:
+	var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+	var low := Vector2(INF, INF)
+	var high := Vector2(-INF, -INF)
+	for triangle in range(0, indices.size(), 3):
+		for edge in 3:
+			var a := vertices[indices[triangle + edge]]
+			var b := vertices[indices[triangle + (edge + 1) % 3]]
+			if minf(a.y, b.y) > BASE_HEIGHT or maxf(a.y, b.y) < BASE_HEIGHT or is_equal_approx(a.y, b.y):
+				continue
+			var hit := a.lerp(b, (BASE_HEIGHT - a.y) / (b.y - a.y))
+			var point := Vector2(hit.x, hit.z)
+			low = low.min(point)
+			high = high.max(point)
+	if not low.is_finite():
+		return Rect2(-0.15, -0.15, 0.3, 0.3)
+	return Rect2(low, high - low)
+
+func _make_trunk_material(wood: BaseMaterial3D, footprint: Rect2, family: int) -> ShaderMaterial:
+	var material := ShaderMaterial.new()
+	var shader := load("res://shaders/tree_trunk.gdshader") as Shader
+	# The current bark materials cull their back faces. Preserve an authored alternative too.
+	if wood.cull_mode != BaseMaterial3D.CULL_BACK:
+		var variant := Shader.new()
+		var cull := "cull_front" if wood.cull_mode == BaseMaterial3D.CULL_FRONT else "cull_disabled"
+		variant.code = shader.code.replace("cull_back", cull)
+		shader = variant
+	material.shader = shader
+	material.set_shader_parameter("albedo_texture", wood.albedo_texture)
+	material.set_shader_parameter("albedo_color", wood.albedo_color)
+	material.set_shader_parameter("uv1_scale", wood.uv1_scale)
+	material.set_shader_parameter("uv1_offset", wood.uv1_offset)
+	material.set_shader_parameter("roughness", wood.roughness)
+	material.set_shader_parameter("metallic", wood.metallic)
+	material.set_shader_parameter("specular", wood.metallic_specular)
+	var root_radius := maxf(footprint.size.x, footprint.size.y) * 0.5
+	material.set_shader_parameter("stain_height", clampf(0.18 + root_radius * 0.6, 0.24, 0.46))
+	material.set_shader_parameter("moss_amount", 0.75 if family == GroundFamily.WILLOW else
+		0.18 if family == GroundFamily.CONIFER else 0.35)
+	return material
+
 func _make_base_material() -> ShaderMaterial:
 	var material := ShaderMaterial.new()
 	material.shader = load("res://shaders/tree_base.gdshader") as Shader
-	material.set_shader_parameter("ground_patch", load("res://assets/textures/tree_ground_patch.png"))
+	material.set_shader_parameter("ground_patch", load("res://assets/textures/tree_ground_variants.png"))
 	var board := get_parent().get_node_or_null("Board") as Board
 	if board != null and board.surface_material != null:
+		var board_shader := board.surface_material.shader
+		var uniforms := {}
+		for info in board_shader.get_shader_uniform_list():
+			uniforms[String(info.name)] = true
+		# Newer meadow shaders split clouds from blades. Older scenes retain their exact two-read path.
+		material.set_shader_parameter("grass_blade_detail", uniforms.has("grass_grade"))
 		for parameter in ["grass_map", "grass_macro_map", "grass_tile_size", "grass_macro_tile_size", "grass_mean", "grass_variation",
 				"grass_detail_gain", "grass_detail_contrast", "hold_colours", "old_light", "new_light",
-				"tonemap_exposure", "tonemap_white"]:
+				"tonemap_exposure", "tonemap_white", "grass_cloud_contrast", "grass_blade_contrast",
+				"grass_blades_fade", "grass_far_contrast", "grass_grade"]:
+			if not uniforms.has(parameter):
+				continue
 			var value: Variant = board.surface_material.get_shader_parameter(parameter)
+			if value == null:
+				value = RenderingServer.shader_get_parameter_default(board_shader.get_rid(), parameter)
 			if value != null:
 				material.set_shader_parameter(parameter, value)
 	else:
@@ -261,21 +338,26 @@ func _make_base_material() -> ShaderMaterial:
 		material.set_shader_parameter("grass_macro_map", load("res://assets/textures/grass_meadow.png"))
 	return material
 
-static func _base_arrays(radius: float) -> Array:
+static func _base_arrays(radius: float, footprint: Rect2, family: int) -> Array:
 	var arrays := []
 	arrays.resize(Mesh.ARRAY_MAX)
 	# A small lift avoids depth fighting with the board; the irregular outline lives in the shader.
 	arrays[Mesh.ARRAY_VERTEX] = PackedVector3Array([
-		Vector3(-radius, 0.018, -radius), Vector3(radius, 0.018, -radius),
-		Vector3(radius, 0.018, radius), Vector3(-radius, 0.018, radius)])
+		Vector3(-radius, BASE_HEIGHT, -radius), Vector3(radius, BASE_HEIGHT, -radius),
+		Vector3(radius, BASE_HEIGHT, radius), Vector3(-radius, BASE_HEIGHT, radius)])
 	arrays[Mesh.ARRAY_NORMAL] = PackedVector3Array([Vector3.UP, Vector3.UP, Vector3.UP, Vector3.UP])
 	arrays[Mesh.ARRAY_TEX_UV] = PackedVector2Array([
 		Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1)])
+	var radii := (footprint.size * (0.5 / ROOT_RADIUS_SCALE)).clamp(Vector2(0.01, 0.01), Vector2.ONE)
+	var metadata := Color(radii.x, radii.y, float(family) / 3.0, 1.0)
+	arrays[Mesh.ARRAY_COLOR] = PackedColorArray([metadata, metadata, metadata, metadata])
+	var centre := footprint.get_center()
+	arrays[Mesh.ARRAY_TEX_UV2] = PackedVector2Array([centre, centre, centre, centre])
 	arrays[Mesh.ARRAY_INDEX] = PackedInt32Array([0, 1, 2, 0, 2, 3])
 	return arrays
 
-func _add_base_surface(mesh: ArrayMesh, radius: float) -> void:
-	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, _base_arrays(radius))
+func _add_base_surface(mesh: ArrayMesh, radius: float, footprint: Rect2, family: int) -> void:
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, _base_arrays(radius, footprint, family))
 	mesh.surface_set_material(mesh.get_surface_count() - 1, _base_material)
 
 ## Vertex colour carries the crown's baked interior shading. Include it in the distant canopy

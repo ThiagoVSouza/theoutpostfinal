@@ -1,0 +1,60 @@
+Tree ground and trunk contact pass
+=================================
+
+Purpose
+-------
+At the closest gameplay view (40 m), the previous soil texture's fine debris
+averaged into a pale, nearly continuous island. The trunk ended abruptly against
+that island. This pass gives the ground larger readable shapes and connects the
+existing trunk to them, without adding props or changing the tree geometry.
+
+Artwork
+-------
+assets/textures/tree_ground_variants.png is a transparent 2 x 2 atlas made with
+the built-in ImageGen tool. See tree_ground_variants_prompt.txt for the exact
+prompts, reference roles, and source image record. The previous
+tree_ground_patch.png and its prompt are retained as the earlier version.
+
+The four cells vary the balance of exposed soil, low green cover, stone marks,
+and litter. Top-left is airy broadleaf ground, top-right is earthier broadleaf
+ground, bottom-left is dry conifer litter, and bottom-right is mossier ground.
+Transparent holes let the actual meadow show through. These are flat painted
+suggestions of vegetation, stones, and roots; there are no additional objects.
+
+Runtime
+-------
+The ground remains one two-triangle surface per tree, using the existing species
+and chunk MultiMeshes. Variation is stable for each tree and uses its transform;
+it does not animate with the camera or require per-frame CPU updates.
+
+A narrow contact treatment follows each trunk's footprint at ground level.
+The lowest part of the existing bark receives a short dirt/moss transition.
+Above that transition the bark keeps its original texture and material values.
+The GLBs, their vertex positions, and their triangle counts remain unchanged.
+
+Ground edges sample the same grass and material settings as the Board. The base
+supports both the original grass contrast path and the newer separate cloud/blade
+contrast path. Board shader overrides and defaults are copied at initialization;
+the new path is selected only when the Board exposes its corresponding uniforms.
+The Board shader and scene lighting are not changed by this pass.
+
+The grass/hold functions remain local to the base shader because the project's
+Godot 4.7.1 loader-thread issue prevents safely sharing them through an include.
+When the Board grass algorithm changes, update the corresponding base path too.
+
+Visual validation
+-----------------
+Use the real Vulkan renderer for screenshots, not the headless renderer.
+Start with birch and oak at the 40 m gameplay view, then inspect the species
+gallery and a 10,000-tree forest. Check the trunk foot, broken paint outline,
+green/stone readability, alpha padding, and consistency with the surrounding
+grass. Compare identical views before and after; retain the captures under
+the ignored previews/tree-visual-pass directory.
+
+The production smoke check covers 1,000 / 10,000 / 50,000 / off, Detail/Distant
+mesh and canopy-map transitions, and exact per-species triangle counts:
+    Oak 199, Maple 199, Birch 199, Pine 200, Stone pine 199,
+    Spruce 197, Cypress 197, White willow 199.
+
+Also check the newer meadow grade and lighting independently, without including
+unrelated scene or terrain edits in this change.

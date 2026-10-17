@@ -1,0 +1,43 @@
+Built-in image_gen generation, 2026-10-17.
+Output: assets/textures/tree_ground_variants.png
+Generated RGBA preserved unchanged; no programmatic image editing.
+
+Reference roles:
+- User reference codex-clipboard-5987471b-1439-4801-84a6-4b37de9c06e0.png: inspected style reference for natural tree-foot ground, low olive foliage, earth and stone accents; not an edit target.
+- assets/textures/tree_ground_patch.png: inspected comparison reference for the existing pale continuous footprint; not an edit target and not the desired new silhouette.
+- The new atlas was generated from the written specification. Neither old image was passed as an image edit target.
+
+Atlas contract:
+- TL airy broadleaf; TR earthier broadleaf; BL dry conifer needle floor; BR moist mossy willow.
+- Single RGBA atlas, RGB material colors and alpha ground coverage. No separate masks.
+- Flat orthographic painted details suitable for the existing two-triangle ground quads.
+
+Exact prompt:
+Use case: stylized-concept.
+Asset type: transparent RGBA 2-by-2 forest-floor ground-decal atlas for a real-time strategy game. FOUR isolated flat ground paintings, used on simple flat ground quads beneath trees.
+Primary request: create one square atlas with EXACTLY FOUR equal square cells and one distinct SMALL, DARK, BROKEN organic forest-floor patch centered in each cell. The patches combine irregular exposed-earth fingers and disconnected small soil islands, REAL TRANSPARENT GRASS HOLES, two or three restrained low olive leafy groundcover clusters, a few readable flat muted-gray stone facets, and concentrated small areas of leaf or needle litter. These must look like natural integrated ground painting at a 40-meter game camera, not props placed on a dirt disk.
+STRICT LAYOUT: four EQUAL cells in an EXACT 2-by-2 grid. Patch centers at canvas (25%,25%), (75%,25%), (25%,75%), (75%,75%). Each patch's total footprint MUST fit within the central EIGHTY PERCENT of its own cell width and height, leaving at least TEN PERCENT of that cell width completely empty TRANSPARENT on all four sides. Wide empty fully transparent cross-shaped gutter through the canvas center. Do not enlarge the patches into the padding. No tip, root streak, leaf or stone crosses a divider or touches an outer border. No grid lines, frames, labels or text.
+Four restrained variants:
+TOP LEFT: airy broadleaf ground, the most broken patch, a few earthy fingers and little litter islands, three small low olive leafy clusters separated by transparent meadow holes, two or three flat gray stone facets.
+TOP RIGHT: earthier broadleaf ground, slightly more connected but still clearly broken irregular soil, concentrated dry brown leaf litter at two edges, two low olive leafy clusters and three small flat muted-gray stone facets.
+BOTTOM LEFT: dry conifer ground, muted dark brown-olive soil with concentrated dull brown pine-needle litter, two restrained low olive groundcover clusters, two or three flat gray stone facets. Needle litter appears as quiet coherent patches, not fine all-over noisy gravel.
+BOTTOM RIGHT: slightly moist willow ground, muted darker earth with two or three low mossy olive-green leafy clusters, a small concentration of narrow fallen leaves and two flat gray stone facets. Subtle green moss character, no puddle, no bright emerald or white silver wash.
+Shape and alpha: each patch is ragged and ASYMMETRICAL, made from branching short earth fingers and detached islands. BREAK UP the interior with multiple LARGE fully transparent holes where the underlying game grass will show through. About 25–40 percent of each patch's outer envelope should be genuinely open transparent gaps, irregularly distributed. Avoid a continuous pale slab, round disk, neat oval, ring, circular border, regular spokes or solid ground carpet. Outer edges feather organically into alpha with wispy ragged breaks, not a uniform radial fade.
+Trunk-foot origin: preserve a small irregular knot of dark soil at the EXACT CENTER of each cell, approximately five percent of the cell width in radius, sufficiently opaque for the tree foot to sit on it. No hole at the exact center. Two or three subtle thin tapered painted brown root-like streaks may radiate only a short distance from this center into nearby soil fingers. These are FLAT PAINTED surface marks, never a tree trunk, stump, raised root prop or 3D root flare.
+Scale and readability: one patch represents about 2–4 meters of ground. The two or three main low leafy clusters each read approximately 0.4–0.8 meters across, with broad coherent olive shapes and quiet leaf hints. Flat stones are about 0.2–0.35 meters, big enough to read as a few simple gray facets but not boulders. Debris is concentrated in a few areas, not scattered tiny noise everywhere. Prioritize a small number of clear macro forms and quiet earth over photoreal fine gravel.
+Palette: subdued natural forest floor matching an olive meadow. Soil is DARKER and less pale than dry beige dust, average muted brown/olive around RGB(105,101,70), with gentle warmer leaf-litter accents. Groundcover is low-saturation olive green around RGB(79,94,46), with a little muted sage variation. Stones are muted gray-beige around RGB(116,117,100), with gentle flat facet variation. Same coherent low-contrast palette across all four variants. No pale cream continuous patch, bright white gravel, orange mulch, neon green or highly saturated yellow.
+Camera, material and style: perfectly ORTHOGRAPHIC STRAIGHT DOWN, flat 2D ground-albedo painting with believable stylized RTS detail. Low plants and stones are represented only by restrained flat surface marks and very subtle local facet shading. Even neutral diffuse material lighting. No perspective, scene framing, horizon, raised soil pile, geometric standing plant, tall grass, 3D bush, model display, pedestal, extrusion or long directional shadow. No tree cast shadows, sun direction, vignette or ambient-occlusion halo.
+Transparency: genuine RGBA with fully transparent background, separator gutters and internal grass holes. No printed checkerboard, opaque green backing, square background or black painting standing in for transparency. Preserve soft detailed alpha edges.
+Avoid: trunk, tree, stump, standing plant, 3D prop, raised roots, boulder, rock pile, moss mound, flowers, log, mushrooms, full landscape, continuous dirt disk, flat pale blob, uniform circular patch, ring, path, tiny all-over gravel noise, baked tree shadow, directional cast shadow, labels, text, watermark, borders and clipped tips.
+Output only the square transparent 2x2 atlas of four small broken forest-floor ground paintings with strict empty cell padding and genuine interior transparency.
+
+Read-only inspection:
+- 1254 x 1254 RGBA; four 627 x 627 cells.
+- Alpha>127 coverage TL/TR/BL/BR: 30.16%, 36.64%, 36.90%, 37.07%.
+- Mean RGB at alpha>127 TL/TR/BL/BR: (90.62,76.35,48.90), (92.76,75.99,50.23), (93.58,73.53,48.28), (86.19,73.42,45.74).
+- Meaningful-alpha margins left/top/right/bottom: TL (63,87,47,49); TR (65,98,59,51); BL (68,47,46,77); BR (68,59,59,86).
+- Smallest meaningful-alpha margin is 46 px (7.34% of a cell); this is slightly below the requested minimum 8%, but no art approaches or crosses a divider. At alpha>8, smallest margin is 44 px (7.02%).
+- Center divider and all outer-edge alpha maxima are <=1/255.
+- Exact cell-center alpha TL/TR/BL/BR: 253, 251, 253, 252. All centers have dark soil coverage.
+- Within each meaningful-alpha bounding box, fully clear alpha<=2 occupies approximately 41.27%, 30.34%, 33.76%, 29.91%; this includes irregular outer corners and real interior grass holes.
+- Artwork is visibly darker and more broken than the previous pale patch, with olive leafy clusters, restrained gray flat stone facets and species-specific concentrated litter.
